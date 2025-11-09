@@ -4,7 +4,7 @@
 	"description": "a VsCode Color theme based on monkeytype's miami nights theme, catppuccin, and dracula themes",
 	"version": "0.1.0",
 	"engines": {
-		"vscode": "^1.105.0"
+		"vscode": "^1.99.3"
 	},
 	"repository": {
 			"type": "git",
