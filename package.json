@@ -1,0 +1,35 @@
+{
+	"name": "miami-dream",
+	"displayName": "miami-dream",
+	"description": "Color theme based on monkeytype's miami nights theme, catppuccin, and dracula themes",
+	"version": "0.1.0",
+	"engines": {
+		"vscode": "^1.94.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/hanakin/miami-dream"
+	},
+	"publisher": "hanakin",
+	"categories": [
+		"Themes"
+	],
+	"contributes": {
+		"themes": [
+			{
+				"label": "Miami Dream",
+				"uiTheme": "vs-dark",
+				"path": "./themes/miami-dream.json"
+			}
+		]
+	},
+	"dependencies": {
+		"@vscode/vsce": "^3.3.2",
+		"install-peerdeps": "^3.0.7"
+	},
+	"__metadata": {
+		"installedTimestamp": 1762638242143,
+		"targetPlatform": "universal",
+		"size": 133465
+	}
+}
