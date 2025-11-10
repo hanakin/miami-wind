@@ -5,3 +5,5 @@
 - Settle on name and colors
 ## [0.3.0]
 - Overhaul the colors object using Catppuccin's Mocha object as a base.
+## [0.3.1]
+- Updated Icon

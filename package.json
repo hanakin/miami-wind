@@ -3,7 +3,7 @@
 	"license": "MIT",
 	"displayName": "Miami Wind",
 	"description": "a VsCode Color theme based on monkeytype's miami nights theme, catppuccin, and dracula themes using tailwind colors",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"engines": {
 		"vscode": "^1.80.0",
 		"node": ">=20.0.0"
