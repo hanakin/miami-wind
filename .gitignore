@@ -1,7 +1,10 @@
+.specstory/
 .specstory/**
+.specstory/**/*.md
+.vscode/
 .vscode/**
+.vscode/**/*.*
 .vscode-test/**
 .gitignore
 vsc-extension-quickstart.md
-.specstory/**/*.md
 .DS_Store
