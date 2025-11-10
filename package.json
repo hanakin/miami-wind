@@ -1,26 +1,29 @@
 {
-	"name": "miami-dream",
-	"displayName": "Miami Dream",
-	"description": "a VsCode Color theme based on monkeytype's miami nights theme, catppuccin, and dracula themes",
-	"version": "0.1.0",
+	"name": "miami-wind",
+	"license": "MIT",
+	"displayName": "Miami Wind",
+	"description": "a VsCode Color theme based on monkeytype's miami nights theme, catppuccin, and dracula themes using tailwind colors",
+	"version": "0.2.0",
 	"engines": {
-		"vscode": "^1.99.3"
+		"vscode": "^1.80.0",
+		"node": ">=20.0.0"
 	},
 	"repository": {
-			"type": "git",
-			"url": "https://github.com/hanakin/miami-dream"
-		},
-		"publisher": "hanakin",
+		"type": "git",
+		"url": "https://github.com/hanakin/miami-wind"
+	},
+	"publisher": "hanakin",
 	"categories": [
 		"Themes"
 	],
 	"contributes": {
 		"themes": [
-		{
-			"label": "Miami Dream",
-			"uiTheme": "vs-dark",
-			"path": "./themes/miami-dream.json"
-		}
+			{
+				"label": "Miami Wind",
+				"uiTheme": "vs-dark",
+				"path": "./themes/miami-wind.json"
+			}
 		]
-	}
+	},
+	"icon": "icon.png"
 }
