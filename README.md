@@ -1,5 +1,10 @@
 # Miami Wind Color Theme
-A Color scheme which is a blend of colors from [Tailwind CSS](https://tailwindcss.com/docs/colors) and Greyscale colors from [Catppuccin Mocha](https://catppuccin.com/) with inspiration from the theme [Miami Nights](https://github.com/monkeytypegame/monkeytype/blob/master/frontend/static/themes/miami_nights.css) for [Monkeytype](https://www.monkeytype.com). Color Swatches and pallette code generated using [Coolors](https://coolors.co/)
+A Color scheme which is a blend of colors from [Tailwind CSS](https://tailwindcss.com/docs/colors) and Greyscale colors from [Catppuccin Mocha](https://catppuccin.com/) inspired by the theme [Miami Nights](https://github.com/monkeytypegame/monkeytype/blob/master/frontend/static/themes/miami_nights.css) for [Monkeytype](https://www.monkeytype.com). Color Swatches and pallette code generated using [Coolors](https://coolors.co/).
+
+## Projects
+- [VSCode/Cursor](https://github.com/hanakin/miami-wind-vscode)
+- [Obsidian](https://github.com/hanakin/miami-wind-obsidian-theme)
+- [Omarchy](https://github.com/hanakin/omarchy-miami-wind-theme)
 
 ## Color Palette
 
