@@ -10,14 +10,32 @@ A Color scheme which is a blend of colors from [Tailwind CSS](https://tailwindcs
 
 ## Base Colors
 [Primary Colors](https://coolors.co/f472b6-22d3ee-fef08a-c084fc-818cf8-34d399-f87171-fdba74)
-
 ![Primary Colors](./imgs/primary-colors.png)
+### Spec
+
+- Pink #F472B6: Primary ui elements and accents, CODE: keywords, highlight, importance
+- Cyan #22D3EE: Secondary ui elements and accents, main accent color
+- Yellow #FEF08A: neutral, CODE: strings, italic
+- Purple #C084FC: CODE: headings
+- Blue #818CF8: CODE: comments, header alt, hr
+- Green #34D399: success, good, CODE: code, functions
+- Red #F87171: error, bad, fail, CODE: error
+- Orange #FDBA74: CODE: markup, values, bold
 
 ## Additional Colors
 [Bright Colors](https://coolors.co/palette/ec4899-38bdf8-fde047-a78bfa-2563eb-4ade80-f43f5e-fb923c)
-
 ![Bright Colors](./imgs/bright-colors.png)
-
+### Spec
+Primarily used as hover states for base colors except Cyan, which has more uses...
+- Pink #EC4899: 
+- Cyan #38BDF8: Links, CODE: variables, properties
+- Yellow #FDE047: 
+- Purple #A78BFA: 
+- Blue #2563EB: 
+- Green #4ADE80: 
+- Red #F43F5E: 
+- Orange #FB923C:
+  
 ## Greyscale
 
 [Text Colors](https://coolors.co/cdd6f4-bac2de-a6adc8)
