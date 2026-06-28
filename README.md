@@ -1,16 +1,9 @@
 # Miami Wind Color Theme
-A Color scheme which is a blend of colors from [Tailwind CSS](https://tailwindcss.com/docs/colors) and Greyscale colors from [Catppuccin Mocha](https://catppuccin.com/) inspired by the theme [Miami Nights](https://github.com/monkeytypegame/monkeytype/blob/master/frontend/static/themes/miami_nights.css) for [Monkeytype](https://www.monkeytype.com). Color Swatches and pallette code generated using [Coolors](https://coolors.co/).
-
-## Projects
-- [VSCode/Cursor](https://github.com/hanakin/miami-wind-vscode)
-- [Obsidian](https://github.com/hanakin/miami-wind-obsidian-theme)
-- [Omarchy](https://github.com/hanakin/omarchy-miami-wind-theme)
+A Color scheme which is a blend of colors from [Tailwind CSS](https://tailwindcss.com/docs/colors) and Greyscale colors from [Catppuccin Mocha](https://catppuccin.com/) inspired by the theme [Miami Nights](https://github.com/monkeytypegame/monkeytype/blob/master/frontend/static/themes/miami_nights.css) for [Monkeytype](https://www.monkeytype.com).
 
 ## Color Palette
 
-## Base Colors
-[Primary Colors](https://coolors.co/f472b6-22d3ee-fef08a-c084fc-818cf8-34d399-f87171-fdba74)
-![Primary Colors](./imgs/primary-colors.png)
+## Base Colors (Primary Colors)
 ### Spec
 
 - Pink `#F472B6`: Primary ui elements and accents, CODE: keywords, highlight, importance
@@ -22,9 +15,7 @@ A Color scheme which is a blend of colors from [Tailwind CSS](https://tailwindcs
 - Red `#F87171`: CODE: error
 - Orange `#FDBA74`: CODE: markup, values, bold
 
-## Additional Colors
-[Bright Colors](https://coolors.co/palette/ec4899-38bdf8-fde047-a78bfa-2563eb-4ade80-f43f5e-fb923c)
-![Bright Colors](./imgs/bright-colors.png)
+## Additional Colors (Bright Colors)
 ### Spec
 Primarily used as hover states for base colors except Cyan, which has more uses...
 - Pink `#EC4899`:
@@ -56,6 +47,11 @@ The `grey-50 … grey-1300` ramp (light → dark). Full data in `pallette.json`.
 - `grey-1300` `#09090b`
 
 ---
+
+## Projects using it
+- [VSCode/Cursor](https://github.com/hanakin/miami-wind-vscode)
+- [Obsidian](https://github.com/hanakin/miami-wind-obsidian-theme)
+- [Omarchy](https://github.com/hanakin/omarchy-miami-wind-theme)
 
 ## Registry (shadcn)
 
