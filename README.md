@@ -74,9 +74,6 @@ It ships **only what shadcn doesn't already give you**:
 5. **The `mw-cva` plugin** — links a vanilla shadcn component to its separate cva by filename, with
    inline fallback. Required for the cva layer.
 
-<<<<<<< HEAD
-![Background Colors](./imgs/background-colors.png)
-=======
 It does **not** duplicate shadcn's component source or `cn`.
 
 ### Use it
@@ -102,4 +99,3 @@ palette reference (and feeds the editor-theme repos) — it does not generate th
 bun install
 bun run check     # biome + typecheck
 ```
->>>>>>> e090b81 (refactor project for furture use and fix greyscale)
