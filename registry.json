@@ -74,7 +74,7 @@
 					"--color-text": "var(--color-grey-50)",
 					"--color-subtext": "var(--color-grey-100)",
 					"--color-subtext0": "var(--color-grey-200)",
-					"--color-pink": "var(--color-pink-300)",
+					"--color-pink": "var(--color-pink-400)",
 					"--color-bright-pink": "var(--color-pink-500)",
 					"--color-cyan": "var(--color-cyan-400)",
 					"--color-bright-cyan": "var(--color-sky-400)",

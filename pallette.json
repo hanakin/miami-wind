@@ -3,7 +3,7 @@
 		{
 			"name": "Pink",
 			"colorname": "Primary",
-			"tailwind": "pink-300",
+			"tailwind": "pink-400",
 			"hex": "f472b6",
 			"rgb": [244, 114, 182],
 			"cmyk": [0, 53, 25, 4],
