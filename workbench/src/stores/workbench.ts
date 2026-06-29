@@ -1,0 +1,100 @@
+import { useStore } from "zustand";
+import { createStore } from "zustand/vanilla";
+import type { CvaModel } from "../../server/lib/cva-codec";
+
+/**
+ * The workbench store holds three views of every cva, keyed by export symbol:
+ *   seeds  — the vanilla shadcn default (registered by the live-cva plugin at load)
+ *   saved  — the last-saved baseline (the registry override if one exists, else the seed)
+ *   models — the working copy that previews render from
+ *
+ * Live preview always reads `models`. Nothing is written to disk until Save, which
+ * advances `saved`. `isDirty` compares working against the baseline.
+ */
+export interface WorkbenchState {
+	seeds: Record<string, CvaModel>;
+	saved: Record<string, CvaModel>;
+	models: Record<string, CvaModel>;
+	registerSeed: (key: string, model: CvaModel) => void;
+	loadOverrides: (models: CvaModel[]) => void;
+	setModel: (key: string, model: CvaModel) => void;
+	revert: (key: string) => void;
+	revertToSeed: (key: string) => void;
+	markSaved: (key: string) => void;
+}
+
+export const workbenchStore = createStore<WorkbenchState>((set) => ({
+	seeds: {},
+	saved: {},
+	models: {},
+
+	registerSeed: (key, model) =>
+		set((s) => {
+			if (s.seeds[key]) return s; // idempotent: never clobber an edited working copy
+			return {
+				seeds: { ...s.seeds, [key]: model },
+				saved: s.saved[key] ? s.saved : { ...s.saved, [key]: model },
+				models: s.models[key] ? s.models : { ...s.models, [key]: model },
+			};
+		}),
+
+	loadOverrides: (models) =>
+		set((s) => {
+			const saved = { ...s.saved };
+			const working = { ...s.models };
+			for (const m of models) {
+				saved[m.exportName] = m;
+				working[m.exportName] = m;
+			}
+			return { saved, models: working };
+		}),
+
+	setModel: (key, model) => set((s) => ({ models: { ...s.models, [key]: model } })),
+
+	revert: (key) =>
+		set((s) => {
+			const baseline = s.saved[key] ?? s.seeds[key];
+			return baseline ? { models: { ...s.models, [key]: baseline } } : s;
+		}),
+
+	// After deleting a registry override: drop back to the vanilla seed for both working + saved.
+	revertToSeed: (key) =>
+		set((s) => {
+			const seed = s.seeds[key];
+			return seed
+				? { saved: { ...s.saved, [key]: seed }, models: { ...s.models, [key]: seed } }
+				: s;
+		}),
+
+	markSaved: (key) =>
+		set((s) => {
+			const model = s.models[key];
+			return model ? { saved: { ...s.saved, [key]: model } } : s;
+		}),
+}));
+
+export function useWorkbench<T>(selector: (s: WorkbenchState) => T): T {
+	return useStore(workbenchStore, selector);
+}
+
+export function baseline(state: WorkbenchState, key: string): CvaModel | undefined {
+	return state.saved[key] ?? state.seeds[key];
+}
+
+export function isDirty(state: WorkbenchState, key: string): boolean {
+	const working = state.models[key];
+	const base = baseline(state, key);
+	if (!working || !base) return false;
+	return !deepEqual(working, base);
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+	if (a === b) return true;
+	if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+	if (Array.isArray(a) !== Array.isArray(b)) return false;
+	const oa = a as Record<string, unknown>;
+	const ob = b as Record<string, unknown>;
+	const keys = Object.keys(oa);
+	if (keys.length !== Object.keys(ob).length) return false;
+	return keys.every((k) => deepEqual(oa[k], ob[k]));
+}
