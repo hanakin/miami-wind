@@ -31,29 +31,30 @@ function expectNoCriticalLogs() {
 	expect(logged.filter((m) => CRITICAL.test(m))).toEqual([]);
 }
 
-// Each route mounts the full shell (Toolbar + Sidebar), so these catch shell-level loops/crashes too.
+// Each route mounts the full shell (navbar + preview canvas), so these catch shell-level loops too.
 describe("routes render without runtime errors", () => {
-	it("theme editor (/theme)", async () => {
-		renderApp("/theme");
-		await screen.findByText(/Live preview/);
+	it("theme scope (/)", async () => {
+		renderApp("/");
+		await screen.findByText(/Create token/);
 		expectNoCriticalLogs();
 	});
 
-	it("detail with cva (/components/button)", async () => {
+	it("component with cva (/components/button)", async () => {
 		renderApp("/components/button");
-		await screen.findByText(/Target/);
+		await screen.findByText(/Manage variants/);
 		expectNoCriticalLogs();
 	});
 
-	it("detail preview-only (/components/input)", async () => {
+	it("component non-cva (/components/input)", async () => {
 		renderApp("/components/input");
-		await screen.findByText(/preview only/i);
+		// Non-cva primitives now get the same full editor (seeded empty model) as cva ones.
+		await screen.findByText(/Manage variants/i);
 		expectNoCriticalLogs();
 	});
 
-	it("detail custom primitive (/components/icon)", async () => {
+	it("custom primitive (/components/icon)", async () => {
 		renderApp("/components/icon");
-		await screen.findByText(/preview only/i);
+		await screen.findByText(/Source/);
 		expectNoCriticalLogs();
 	});
 });

@@ -26,3 +26,32 @@ export function sameTarget(a: Target, b: Target): boolean {
 	if (a.kind === "base" || b.kind === "base") return true;
 	return a.axis === b.axis && a.option === b.option;
 }
+
+// --- Structural edits: add/remove variant axes and options -------------------
+
+export function addAxis(model: CvaModel, axis: string): CvaModel {
+	if (!axis || model.variants[axis]) return model;
+	return { ...model, variants: { ...model.variants, [axis]: { default: "" } } };
+}
+
+export function removeAxis(model: CvaModel, axis: string): CvaModel {
+	const variants = { ...model.variants };
+	delete variants[axis];
+	const defaultVariants = { ...model.defaultVariants };
+	delete defaultVariants[axis];
+	return { ...model, variants, defaultVariants };
+}
+
+export function addOption(model: CvaModel, axis: string, option: string): CvaModel {
+	const current = model.variants[axis] ?? {};
+	if (!option || current[option] !== undefined) return model;
+	return { ...model, variants: { ...model.variants, [axis]: { ...current, [option]: "" } } };
+}
+
+export function removeOption(model: CvaModel, axis: string, option: string): CvaModel {
+	const current = { ...(model.variants[axis] ?? {}) };
+	delete current[option];
+	const defaultVariants = { ...model.defaultVariants };
+	if (defaultVariants[axis] === option) delete defaultVariants[axis];
+	return { ...model, variants: { ...model.variants, [axis]: current }, defaultVariants };
+}

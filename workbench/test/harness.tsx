@@ -38,6 +38,8 @@ export function mockApi() {
 						: (input as Request).url;
 			if (u.includes("/api/cva"))
 				return Promise.resolve(json({ models: [BUTTON_MODEL], errors: [] }));
+			if (u.includes("/api/primitives/source/"))
+				return Promise.resolve(json({ source: "export function Icon() {\n\treturn null;\n}\n" }));
 			if (u.includes("/api/primitives"))
 				return Promise.resolve(json({ custom: ["icon"], cvas: ["button"] }));
 			if (u.includes("/api/theme")) return Promise.resolve(json({ tokens: THEME_TOKENS }));

@@ -32,6 +32,15 @@ export function buildClasses(tokens: Token[]): string {
 	return tokens.map((t) => t.raw).join(" ");
 }
 
+/** Promote one state's prefixed utilities to base (strip the prefix) — for forced-state previews. */
+export function flattenState(value: string, state: string): string {
+	if (!state) return value;
+	return parseClasses(value)
+		.filter((t) => t.state === state)
+		.map((t) => t.utility)
+		.join(" ");
+}
+
 /** Replace tokens in `state` matching `match` with one `utility` (or remove all matches if null). */
 export function applyUtility(
 	value: string,
@@ -139,7 +148,32 @@ export function isColor(prop: ColorProp) {
 	return (u: string) => parseColor(u, prop) !== null;
 }
 
-/** CSS value usable as a swatch background for a color token. */
+/** CSS color for a token, resilient to shadcn-bridge tokens that exist only as `--x` (not `--color-x`). */
 export function swatchVar(token: string): string {
-	return `var(--color-${token})`;
+	return `var(--color-${token}, var(--${token}))`;
+}
+
+/** Matches a color utility for a prop: a known token (bg-pink, bg-pink/50) or arbitrary (bg-[#abc]). */
+export function colorMatch(prop: ColorProp) {
+	return (u: string) => parseColor(u, prop) !== null || u.startsWith(`${prop}-[`);
+}
+
+export interface ReadColor {
+	token: string | null;
+	opacity: number;
+	arbitrary: string | null;
+}
+
+/** Read the current color utility for a prop in a given state into a structured value. */
+export function readColor(value: string, state: string, prop: ColorProp): ReadColor {
+	const u = findUtility(value, state, colorMatch(prop));
+	if (!u) return { token: null, opacity: 100, arbitrary: null };
+	const parsed = parseColor(u, prop);
+	if (parsed) return { token: parsed.token, opacity: parsed.opacity, arbitrary: null };
+	const m = u.match(/^[a-z]+-\[(.+)\]$/);
+	return { token: null, opacity: 100, arbitrary: m?.[1] ?? null };
+}
+
+export function arbitraryColor(prop: ColorProp, value: string): string {
+	return `${prop}-[${value}]`;
 }

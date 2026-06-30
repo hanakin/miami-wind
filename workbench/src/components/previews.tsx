@@ -154,7 +154,10 @@ export const previews: Record<string, PreviewRender> = {
 			</BreadcrumbList>
 		</Breadcrumb>
 	),
-	button: (p) => <Button {...p}>Button</Button>,
+	button: (p) => {
+		const size = typeof p?.size === "string" ? p.size : "";
+		return <Button {...p}>{size.startsWith("icon") ? <Icon icon="mdi:star" /> : "Button"}</Button>;
+	},
 	card: () => (
 		<Card className="w-64">
 			<CardHeader>

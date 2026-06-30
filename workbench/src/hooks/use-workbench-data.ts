@@ -25,6 +25,17 @@ export function useInitOverrides() {
 	return query;
 }
 
+/** The source of a custom primitive (registry/components/ui/<name>.tsx), for read-only display. */
+export function useComponentSource(name: string) {
+	return useQuery({
+		queryKey: ["source", name],
+		queryFn: async (): Promise<{ source: string } | { error: string }> => {
+			const r = await client.api.primitives.source[":name"].$get({ param: { name } });
+			return r.json();
+		},
+	});
+}
+
 /** Full Tailwind class list for the inspector's IntelliSense. */
 export function useTailwindClasses() {
 	return useQuery({
@@ -57,6 +68,28 @@ export function useDirtyCount(): number {
 /** The working cva model for a component (by file name), or undefined if it has no cva. */
 export function useComponentModel(name: string): CvaModel | undefined {
 	return useWorkbench((s) => Object.values(s.models).find((m) => m.name === name));
+}
+
+/**
+ * Guarantee a model exists for a component. cva primitives register their seed via the live-cva
+ * plugin; non-cva and custom primitives get an empty one here, so every component gets the same
+ * full editor (variants + inspector) and live override — not just the ones shadcn ships a cva for.
+ */
+export function useEnsureModel(name: string): void {
+	const missing = useWorkbench((s) => !Object.values(s.models).some((m) => m.name === name));
+	useEffect(() => {
+		if (missing) {
+			workbenchStore.getState().registerSeed(name, {
+				name,
+				localName: name,
+				exportName: name,
+				base: "",
+				variants: {},
+				defaultVariants: {},
+				compoundVariants: [],
+			});
+		}
+	}, [missing, name]);
 }
 
 /** Save a model to its registry cva file (PUT creates or overwrites), then rebaseline. */

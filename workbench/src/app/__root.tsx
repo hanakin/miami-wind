@@ -1,11 +1,29 @@
+import { Icon } from "@registry-ui/icon";
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { Sidebar } from "~/components/sidebar";
+import { createRootRouteWithContext, Outlet, useNavigate, useParams } from "@tanstack/react-router";
+import { useEffect, useMemo } from "react";
+import { previews } from "~/components/previews";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
+} from "~/components/ui/select";
 import { Toaster } from "~/components/ui/sonner";
 import { TooltipProvider } from "~/components/ui/tooltip";
-import { useDirtyCount, useInitOverrides, useSaveAll } from "~/hooks/use-workbench-data";
-import { useTheme } from "~/stores/theme";
+import { useSaveTheme, useThemeData } from "~/hooks/use-theme-data";
+import {
+	useDirtyCount,
+	useInitOverrides,
+	usePrimitives,
+	useSaveAll,
+} from "~/hooks/use-workbench-data";
+import { themeDirty, themeStore, useTheme } from "~/stores/theme";
+import { useWorkbench, workbenchStore } from "~/stores/workbench";
+import { cssForModels } from "~/utils/live-css";
 
 export interface RouterContext {
 	queryClient: QueryClient;
@@ -17,52 +35,150 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
 	useInitOverrides();
+	useThemeData();
 	const themeTokens = useTheme((s) => s.tokens);
 	useEffect(() => {
 		const el = document.documentElement;
 		for (const t of themeTokens) el.style.setProperty(t.name, t.value);
 	}, [themeTokens]);
 
+	// Live cva: resolve the working models to CSS and repaint a scoped stylesheet on every edit,
+	// so class changes (opacity, colors, radius…) show instantly without Tailwind recompiling.
+	useEffect(() => {
+		const style = document.createElement("style");
+		style.id = "live-cva";
+		document.head.appendChild(style);
+		const paint = () => {
+			style.textContent = cssForModels(workbenchStore.getState().models);
+		};
+		paint();
+		const unsub = workbenchStore.subscribe(paint);
+		return () => {
+			unsub();
+			style.remove();
+		};
+	}, []);
+
 	return (
 		<TooltipProvider delayDuration={200}>
 			<div className="flex h-screen flex-col bg-background text-foreground">
-				<Toolbar />
-				<div className="flex min-h-0 flex-1">
-					<Sidebar />
-					<main className="min-w-0 flex-1 overflow-y-auto">
-						<Outlet />
-					</main>
-				</div>
+				<Navbar />
+				<main className="min-h-0 flex-1">
+					<Outlet />
+				</main>
 			</div>
 			<Toaster />
 		</TooltipProvider>
 	);
 }
 
-function Toolbar() {
-	const dirty = useDirtyCount();
-	const { saveAll, isPending } = useSaveAll();
+function Navbar() {
+	const cvaDirty = useDirtyCount();
+	const themeIsDirty = useTheme(themeDirty);
+	const tokens = useTheme((s) => s.tokens);
+	const saveTheme = useSaveTheme();
+	const { saveAll } = useSaveAll();
+	const total = cvaDirty + (themeIsDirty ? 1 : 0);
+	const pending = saveTheme.isPending;
+
+	const onSave = () => {
+		if (themeIsDirty) saveTheme.mutate({ tokens });
+		saveAll();
+	};
+	const onReset = () => {
+		themeStore.getState().revert();
+		const ws = workbenchStore.getState();
+		for (const m of Object.values(ws.models)) ws.revert(m.exportName);
+	};
+
 	return (
-		<header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-			<div className="flex items-center gap-2">
+		<header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-4">
+			<div className="flex items-center gap-3">
 				<span className="size-3 rounded-full bg-primary" />
 				<span className="font-semibold tracking-tight">Miami Wind</span>
-				<span className="text-subtext0">·</span>
-				<span className="text-subtext0">Workbench</span>
+				<ScopeSelect />
 			</div>
-			<div className="flex items-center gap-3">
+			<div className="flex items-center gap-2">
 				<span className="text-sm text-subtext0">
-					{dirty > 0 ? `${dirty} unsaved cva${dirty > 1 ? "s" : ""}` : "All saved"}
+					{total > 0 ? `${total} unsaved` : "All saved"}
 				</span>
 				<button
 					type="button"
-					disabled={dirty === 0 || isPending}
-					onClick={saveAll}
-					className="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-bright-pink disabled:cursor-not-allowed disabled:opacity-50"
+					disabled={total === 0}
+					onClick={onReset}
+					className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm text-subtext transition-colors hover:bg-interactive hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
 				>
-					{isPending ? "Saving…" : "Save all"}
+					Reset
+				</button>
+				<button
+					type="button"
+					disabled={total === 0 || pending}
+					onClick={onSave}
+					className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-bright-pink disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					<Icon icon="mdi:content-save-outline" size={15} />
+					{pending ? "Saving…" : "Save"}
 				</button>
 			</div>
 		</header>
+	);
+}
+
+function ScopeSelect() {
+	const navigate = useNavigate();
+	const params = useParams({ strict: false }) as { name?: string };
+	const current = params.name ?? "theme";
+	const primitives = usePrimitives();
+	const custom = new Set(primitives.data?.custom ?? []);
+	const models = useWorkbench((s) => s.models);
+	const cvaNames = useMemo(() => new Set(Object.values(models).map((m) => m.name)), [models]);
+
+	const names = Object.keys(previews).sort();
+	const customNames = names.filter((n) => custom.has(n));
+	const withCva = names.filter((n) => !custom.has(n) && cvaNames.has(n));
+	const others = names.filter((n) => !custom.has(n) && !cvaNames.has(n));
+
+	return (
+		<Select
+			value={current}
+			onValueChange={(v) =>
+				v === "theme"
+					? navigate({ to: "/" })
+					: navigate({ to: "/components/$name", params: { name: v } })
+			}
+		>
+			<SelectTrigger className="h-8 w-56">
+				<SelectValue />
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="theme">Theme</SelectItem>
+				{customNames.length > 0 && (
+					<SelectGroup>
+						<SelectLabel>Custom primitives</SelectLabel>
+						{customNames.map((n) => (
+							<SelectItem key={n} value={n}>
+								{n}
+							</SelectItem>
+						))}
+					</SelectGroup>
+				)}
+				<SelectGroup>
+					<SelectLabel>With variants</SelectLabel>
+					{withCva.map((n) => (
+						<SelectItem key={n} value={n}>
+							{n}
+						</SelectItem>
+					))}
+				</SelectGroup>
+				<SelectGroup>
+					<SelectLabel>Components</SelectLabel>
+					{others.map((n) => (
+						<SelectItem key={n} value={n}>
+							{n}
+						</SelectItem>
+					))}
+				</SelectGroup>
+			</SelectContent>
+		</Select>
 	);
 }
