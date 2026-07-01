@@ -1,7 +1,6 @@
 import { Icon } from "@registry-ui/icon";
 import { useEffect, useMemo, useState } from "react";
 import { Inspector } from "~/components/inspector";
-import { slotsFor } from "~/components/open-renders";
 import {
 	Select,
 	SelectContent,
@@ -56,8 +55,9 @@ export function CvaControls({
 			(m) => m.name === name && (m.base.trim() !== "" || Object.keys(m.variants).length > 0),
 		),
 	);
-	// cva components keep their curated editor surfaces; non-cva expose every slot in their source.
-	const slotList = hasCva ? slotsFor(name) : loadedSlots;
+	// Every data-slot in the source is selectable, cva or not — cva components layer Base/variants on
+	// top (built below). A cva'd slot's own static classes are a separate, legitimate edit from its cva.
+	const slotList = loadedSlots;
 	const firstSlot = slotList[0];
 
 	// Non-cva component but the selection is still the default cva target → jump to its first slot.
