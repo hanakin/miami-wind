@@ -124,7 +124,24 @@ export const COLOR_TOKENS = [
 	"grey-1300",
 ] as const;
 
-const COLOR_SET = new Set<string>(COLOR_TOKENS);
+// Recognized color tokens. Seeded with COLOR_TOKENS (the built-in theme) and replaced live from the
+// theme store as vars are added/removed — so the menu and parser never drift from the CSS vars.
+// ponytail: module-global set; fine because the workbench edits one theme at a time.
+let colorSet = new Set<string>(COLOR_TOKENS);
+export function setColorTokens(tokens: Iterable<string>): void {
+	colorSet = new Set(tokens);
+}
+
+/** A theme var name (`--color-primary`, `--primary`) as its utility token (`primary`). */
+export function tokenUtil(name: string): string {
+	return name.replace(/^--(color-)?/, "");
+}
+
+/** Heuristic: a theme value that renders as a color — excludes lengths like `--radius: 0.375rem`. */
+export function isColorValue(value: string): boolean {
+	return !/^\s*[\d.]+(px|rem|em|%)\s*$/.test(value);
+}
+
 // Valid CSS color values that aren't theme tokens — used to override an inherited color
 // (e.g. bg-transparent kills a hover bg inherited from base). Order = picker order.
 export const COLOR_KEYWORDS = ["transparent", "current", "inherit"] as const;
@@ -140,7 +157,7 @@ export function parseColor(utility: string, prop: ColorProp): ColorValue | null 
 	if (!utility.startsWith(`${prop}-`)) return null;
 	const rest = utility.slice(prop.length + 1);
 	const [token, op] = rest.split("/");
-	if (!token || !(COLOR_SET.has(token) || KEYWORD_SET.has(token))) return null;
+	if (!token || !(colorSet.has(token) || KEYWORD_SET.has(token))) return null;
 	return { token, opacity: op ? Number(op) : 100 };
 }
 

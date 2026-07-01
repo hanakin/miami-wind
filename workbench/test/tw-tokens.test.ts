@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
 	addRaw,
 	applyUtility,
+	COLOR_TOKENS,
 	colorUtility,
 	findUtility,
 	isColor,
+	isColorValue,
 	parseClasses,
 	parseColor,
 	readEffectiveColor,
 	removeRaw,
+	setColorTokens,
 	swatchVar,
+	tokenUtil,
 } from "~/utils/tw-tokens";
 
 describe("tw-tokens", () => {
@@ -69,5 +73,19 @@ describe("tw-tokens: color cascade + keywords", () => {
 			token: null,
 			inherited: false,
 		});
+	});
+
+	it("live theme tokens become parseable via setColorTokens (kept last: mutates the shared set)", () => {
+		expect(tokenUtil("--color-primary-transparent")).toBe("primary-transparent");
+		expect(tokenUtil("--background")).toBe("background");
+		expect(isColorValue("0.375rem")).toBe(false); // --radius is filtered out
+		expect(isColorValue("var(--color-pink)")).toBe(true);
+		expect(parseColor("bg-primary-transparent", "bg")).toBeNull(); // unknown before sync
+		setColorTokens(["primary-transparent"]);
+		expect(parseColor("bg-primary-transparent", "bg")).toEqual({
+			token: "primary-transparent",
+			opacity: 100,
+		});
+		setColorTokens(COLOR_TOKENS); // restore the seed for any later tests
 	});
 });

@@ -1,5 +1,6 @@
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
+import { isColorValue, setColorTokens, tokenUtil } from "~/utils/tw-tokens";
 import type { ThemeToken } from "../../server/lib/theme-codec";
 
 // Theme draft: working tokens + the last-saved baseline. Edits apply live to the document root
@@ -36,6 +37,12 @@ export const themeStore = createStore<ThemeState>((set) => ({
 	revert: () => set((s) => ({ tokens: s.saved, customCss: s.savedCss })),
 	markSaved: () => set((s) => ({ saved: s.tokens, savedCss: s.customCss })),
 }));
+
+// Keep the class parser's recognized color tokens in lockstep with the live theme (fires on load
+// and on every add/remove), so classes emitted from the picker round-trip for every CSS var.
+themeStore.subscribe((s) =>
+	setColorTokens(s.tokens.filter((t) => isColorValue(t.value)).map((t) => tokenUtil(t.name))),
+);
 
 export function useTheme<T>(selector: (s: ThemeState) => T): T {
 	return useStore(themeStore, selector);

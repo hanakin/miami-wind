@@ -1,63 +1,75 @@
 import { Icon } from "@registry-ui/icon";
+import { useMemo } from "react";
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { useTheme } from "~/stores/theme";
 import { cn } from "~/utils/cn";
-import { COLOR_KEYWORDS, swatchVar } from "~/utils/tw-tokens";
+import { COLOR_KEYWORDS, isColorValue, swatchVar, tokenUtil } from "~/utils/tw-tokens";
 
-// Tokens grouped into named sections for the picker menu (swatch beside name, not a grid).
-const TOKEN_SECTIONS: { header: string; tokens: string[] }[] = [
-	{ header: "Brand", tokens: ["primary", "secondary", "destructive", "accent", "muted"] },
+// Menu sections in display order. Every color var in the live theme is placed into the first section
+// whose test matches; unmatched vars fall through to "Other", so the menu can never omit a token.
+const SECTIONS: { header: string; test: (n: string) => boolean }[] = [
+	{
+		header: "Brand",
+		test: (n) =>
+			(/^(primary|secondary)/.test(n) && !n.endsWith("-foreground")) ||
+			n.endsWith("-transparent") ||
+			["accent", "destructive", "muted"].includes(n),
+	},
 	{
 		header: "Surfaces",
-		tokens: [
-			"background",
-			"foreground",
-			"card",
-			"popover",
-			"surface",
-			"base",
-			"crust",
-			"mantle",
-			"interactive",
-		],
+		test: (n) =>
+			/^sidebar/.test(n) ||
+			[
+				"background",
+				"foreground",
+				"card",
+				"popover",
+				"surface",
+				"base",
+				"crust",
+				"mantle",
+				"interactive",
+			].includes(n),
 	},
-	{ header: "Text", tokens: ["text", "subtext", "subtext0"] },
+	{
+		header: "Text",
+		test: (n) => n.endsWith("-foreground") || ["text", "subtext", "subtext0"].includes(n),
+	},
 	{
 		header: "Accents",
-		tokens: [
-			"pink",
-			"cyan",
-			"yellow",
-			"purple",
-			"blue",
-			"green",
-			"red",
-			"orange",
-			"bright-pink",
-			"bright-cyan",
-		],
+		test: (n) =>
+			/^bright-/.test(n) ||
+			["pink", "cyan", "yellow", "purple", "blue", "green", "red", "orange"].includes(n),
 	},
-	{ header: "Status", tokens: ["success", "warn", "error", "info"] },
-	{
-		header: "Greyscale",
-		tokens: [
-			"grey-50",
-			"grey-100",
-			"grey-200",
-			"grey-300",
-			"grey-400",
-			"grey-500",
-			"grey-600",
-			"grey-700",
-			"grey-800",
-			"grey-900",
-			"grey-1000",
-			"grey-1100",
-			"grey-1200",
-			"grey-1300",
-		],
-	},
+	{ header: "Status", test: (n) => ["success", "warn", "error", "info"].includes(n) },
+	{ header: "Greyscale", test: (n) => /^grey-/.test(n) },
+	{ header: "Other", test: () => true },
 ];
+
+// Derive the picker menu from the live theme: color vars only, deduped by utility name, first section
+// that matches. Reacts to every theme edit (add/remove token), so it always mirrors the CSS vars.
+function useColorSections() {
+	const tokens = useTheme((s) => s.tokens);
+	return useMemo(() => {
+		const seen = new Set<string>();
+		const buckets = new Map<string, string[]>();
+		for (const t of tokens) {
+			if (!isColorValue(t.value)) continue;
+			const n = tokenUtil(t.name);
+			if (seen.has(n)) continue;
+			seen.add(n);
+			const header = SECTIONS.find((s) => s.test(n))?.header ?? "Other";
+			const bucket = buckets.get(header) ?? [];
+			bucket.push(n);
+			buckets.set(header, bucket);
+		}
+		return SECTIONS.filter((s) => buckets.has(s.header)).map((s) => ({
+			header: s.header,
+			tokens: buckets.get(s.header) ?? [],
+		}));
+	}, [tokens]);
+}
 
 const ICON_BTN =
 	"grid size-7 shrink-0 cursor-pointer place-items-center rounded-md border border-border text-subtext0 transition-colors hover:border-primary hover:text-text";
@@ -83,6 +95,7 @@ export function ColorControl({
 	allowNone = false,
 	onValueEdit,
 }: ColorControlProps) {
+	const sections = useColorSections();
 	return (
 		<div className="flex items-center gap-1.5">
 			<span
@@ -136,7 +149,7 @@ export function ColorControl({
 								onClick={() => onToken(k)}
 							/>
 						))}
-					{TOKEN_SECTIONS.map((section) => (
+					{sections.map((section) => (
 						<div key={section.header}>
 							<div className="px-2 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-subtext0">
 								{section.header}
