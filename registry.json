@@ -134,7 +134,9 @@
 					"--card-foreground": "var(--color-text)",
 					"--popover-foreground": "var(--color-text)",
 					"--muted-foreground": "var(--color-grey-700)",
-					"--muted": "var(--color-grey-500)"
+					"--muted": "var(--color-grey-500)",
+					"--primary-transparent": "var(--color-pink-transparent)",
+					"--secondary-transparent": "var(--color-cyan-transparent)"
 				}
 			},
 			"css": {
