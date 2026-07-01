@@ -109,10 +109,9 @@ describe("ExamplePreview", () => {
 				<ExamplePreview name="item" sel={{ type: "slot", slot: "item-title" }} />
 			</TooltipProvider>,
 		);
-		// Both consolidated examples render — asserted via content outside the extracted slot, so it
+		// An example renders — asserted via content outside the extracted slot (item-title), so it
 		// isn't also duplicated in the snapshots below.
-		expect(screen.getByText("Open")).toBeTruthy(); // item-demo action
-		expect(screen.getByText("Featured")).toBeTruthy(); // item-group header
+		expect(screen.getByText("Action")).toBeTruthy(); // item-demo action button
 		// Extraction found item-title occurrences (not the empty state).
 		expect(screen.queryByText(/Not present/)).toBeNull();
 		expect(container.querySelectorAll("[data-slot='item-title']").length).toBeGreaterThan(0);

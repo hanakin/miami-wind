@@ -1,39 +1,60 @@
 import { Icon } from "@registry-ui/icon";
+import { Fragment } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { Button } from "~/components/ui/button";
 import {
 	Item,
+	ItemActions,
 	ItemContent,
 	ItemDescription,
-	ItemFooter,
 	ItemGroup,
-	ItemHeader,
 	ItemMedia,
 	ItemSeparator,
 	ItemTitle,
 } from "~/components/ui/item";
 
-// Covers the slots the single Item demo doesn't: item-group, item-separator, item-header, item-footer
-// (plus item, item-media, item-content, item-title, item-description).
+const people = [
+	{ username: "shadcn", avatar: "https://github.com/shadcn.png", email: "shadcn@vercel.com" },
+	{
+		username: "maxleiter",
+		avatar: "https://github.com/maxleiter.png",
+		email: "maxleiter@vercel.com",
+	},
+	{
+		username: "evilrabbit",
+		avatar: "https://github.com/evilrabbit.png",
+		email: "evilrabbit@vercel.com",
+	},
+];
+
+// shadcn's item-group people list, as a separated list (ItemGroup + ItemSeparator — shadcn's
+// documented composition). Covers: item-group, item-separator, item-media, item-content, item-title,
+// item-description, item-actions.
 export function ItemGroupExample() {
 	return (
 		<ItemGroup className="max-w-sm">
-			<Item variant="outline">
-				<ItemHeader>Featured</ItemHeader>
-				<ItemContent>
-					<ItemTitle>Getting started</ItemTitle>
-					<ItemDescription>A short guide to the basics.</ItemDescription>
-				</ItemContent>
-				<ItemFooter>3 min read</ItemFooter>
-			</Item>
-			<ItemSeparator />
-			<Item variant="outline">
-				<ItemMedia variant="icon">
-					<Icon icon="mdi:book-outline" />
-				</ItemMedia>
-				<ItemContent>
-					<ItemTitle>Reference</ItemTitle>
-					<ItemDescription>Full API documentation.</ItemDescription>
-				</ItemContent>
-			</Item>
+			{people.map((person, i) => (
+				<Fragment key={person.username}>
+					{i > 0 && <ItemSeparator />}
+					<Item>
+						<ItemMedia>
+							<Avatar>
+								<AvatarImage src={person.avatar} className="grayscale" />
+								<AvatarFallback>{person.username.charAt(0)}</AvatarFallback>
+							</Avatar>
+						</ItemMedia>
+						<ItemContent className="gap-1">
+							<ItemTitle>{person.username}</ItemTitle>
+							<ItemDescription>{person.email}</ItemDescription>
+						</ItemContent>
+						<ItemActions>
+							<Button variant="ghost" size="icon" className="rounded-full">
+								<Icon icon="mdi:plus" />
+							</Button>
+						</ItemActions>
+					</Item>
+				</Fragment>
+			))}
 		</ItemGroup>
 	);
 }

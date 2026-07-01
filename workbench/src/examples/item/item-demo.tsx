@@ -9,22 +9,35 @@ import {
 	ItemTitle,
 } from "~/components/ui/item";
 
-// Covers slots: item, item-media, item-content, item-title, item-description, item-actions.
+// shadcn's item-demo, verbatim (icons → our Icon). Covers: item, item-content, item-title,
+// item-description, item-actions, item-media.
 export function ItemDemo() {
 	return (
-		<Item variant="outline" className="max-w-sm">
-			<ItemMedia variant="icon">
-				<Icon icon="mdi:folder-outline" />
-			</ItemMedia>
-			<ItemContent>
-				<ItemTitle>Project files</ItemTitle>
-				<ItemDescription>128 documents · updated 2h ago</ItemDescription>
-			</ItemContent>
-			<ItemActions>
-				<Button variant="outline" size="sm">
-					Open
-				</Button>
-			</ItemActions>
-		</Item>
+		<div className="flex w-full max-w-md flex-col gap-6">
+			<Item variant="outline">
+				<ItemContent>
+					<ItemTitle>Basic Item</ItemTitle>
+					<ItemDescription>A simple item with title and description.</ItemDescription>
+				</ItemContent>
+				<ItemActions>
+					<Button variant="outline" size="sm">
+						Action
+					</Button>
+				</ItemActions>
+			</Item>
+			<Item variant="outline" size="sm" asChild>
+				<a href="#">
+					<ItemMedia>
+						<Icon icon="mdi:check-decagram-outline" className="size-5" />
+					</ItemMedia>
+					<ItemContent>
+						<ItemTitle>Your profile has been verified.</ItemTitle>
+					</ItemContent>
+					<ItemActions>
+						<Icon icon="mdi:chevron-right" className="size-4" />
+					</ItemActions>
+				</a>
+			</Item>
+		</div>
 	);
 }
