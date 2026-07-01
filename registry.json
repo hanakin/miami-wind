@@ -10,37 +10,37 @@
 			"description": "Agent, coding, and design standards. Companions are thin pointers to AGENTS.md.",
 			"files": [
 				{
-					"path": "conventions/AGENTS.md",
+					"path": "AGENTS.md",
 					"type": "registry:file",
 					"target": "~/AGENTS.md"
 				},
 				{
-					"path": "conventions/CODING-STANDARDS.md",
+					"path": "CODING-STANDARDS.md",
 					"type": "registry:file",
 					"target": "~/CODING-STANDARDS.md"
 				},
 				{
-					"path": "conventions/DESIGN.md",
+					"path": "DESIGN.md",
 					"type": "registry:file",
 					"target": "~/DESIGN.md"
 				},
 				{
-					"path": "conventions/CLAUDE.md",
+					"path": "CLAUDE.md",
 					"type": "registry:file",
 					"target": "~/CLAUDE.md"
 				},
 				{
-					"path": "conventions/GEMINI.md",
+					"path": "GEMINI.md",
 					"type": "registry:file",
 					"target": "~/GEMINI.md"
 				},
 				{
-					"path": "conventions/AGENT.md",
+					"path": "AGENT.md",
 					"type": "registry:file",
 					"target": "~/AGENT.md"
 				},
 				{
-					"path": "conventions/.github/copilot-instructions.md",
+					"path": ".github/copilot-instructions.md",
 					"type": "registry:file",
 					"target": "~/.github/copilot-instructions.md"
 				}

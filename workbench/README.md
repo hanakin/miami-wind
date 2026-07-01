@@ -5,7 +5,7 @@ the **theme** tokens, and the custom primitives — with live preview and save-o
 [tweakcn](https://tweakcn.com/editor/theme), but inverted: instead of producing a one-off theme, it
 reads and writes the registry that is this repo's source of truth.
 
-It is itself a Miami Wind app — hand-rolled against the conventions in `../conventions/` (Bun · Vite ·
+It is itself a Miami Wind app — hand-rolled against the conventions in `../AGENTS.md` (Bun · Vite ·
 TanStack Router · Hono · Tailwind v4 · Biome, dark-only, no focus rings) — so the registry's
 conventions get dogfooded.
 
