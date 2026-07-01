@@ -1,6 +1,6 @@
 {
 	"name": "@miami-wind/registry",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"private": true,
 	"type": "module",
 	"description": "Miami Wind — a shadcn source registry: conventions, dark theme, cvas, custom primitives, and the mw-cva plugin.",
