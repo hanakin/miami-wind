@@ -69,6 +69,26 @@ function RootLayout() {
 		};
 	}, []);
 
+	// Live custom global CSS: mirror the editor blob into a <style> so it applies across the whole
+	// workbench as you type and after Save — the same way tokens/cva preview live, instead of waiting
+	// on a globals.css HMR that never fires for the API's out-of-band file write. Save still rewrites
+	// globals.css for persistence/shipping. ponytail: raw <style> = native CSS only; Tailwind
+	// directives (@utility/@apply/@theme) compile only on Save + reload, not in this live preview.
+	useEffect(() => {
+		const style = document.createElement("style");
+		style.id = "custom-css";
+		document.head.appendChild(style);
+		const paint = () => {
+			style.textContent = themeStore.getState().customCss;
+		};
+		paint();
+		const unsub = themeStore.subscribe(paint);
+		return () => {
+			unsub();
+			style.remove();
+		};
+	}, []);
+
 	return (
 		<TooltipProvider delayDuration={200}>
 			<div className="flex h-screen flex-col bg-background text-foreground">
