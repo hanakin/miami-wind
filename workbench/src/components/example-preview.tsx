@@ -32,7 +32,9 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 			setSnaps([]);
 			return;
 		}
+		let alive = true;
 		const extract = () => {
+			if (!alive) return;
 			const seen = new Set<string>();
 			const out: Snap[] = [];
 			for (const section of root.querySelectorAll<HTMLElement>("[data-example]")) {
@@ -47,23 +49,25 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 			setSnaps(out);
 		};
 		extract();
-		// Re-extract when the examples subtree changes (async-loaded icons, or HMR after a slot save).
-		// Snapshots render in a sibling section outside `root`, so this never re-triggers itself.
-		const obs = new MutationObserver(extract);
-		obs.observe(root, { childList: true, subtree: true });
-		return () => obs.disconnect();
-		// `name` isn't a dep: the route remounts this component (key={name}) when it changes.
+		// One delayed pass catches async-loaded icons. Deliberately NOT a live MutationObserver:
+		// observing the subtree while iconify re-rendered it created a setState → render → mutate →
+		// observe feedback loop that froze the tab. `name` isn't a dep — the route remounts on change.
+		const t = setTimeout(extract, 150);
+		return () => {
+			alive = false;
+			clearTimeout(t);
+		};
 	}, [slot]);
 
 	return (
 		<div data-preview className="flex flex-col gap-8 p-6">
-			<div ref={topRef} className="flex flex-col gap-8">
+			<div ref={topRef} className="flex flex-wrap items-start gap-8">
 				{entries.length === 0 ? (
 					<p className="text-sm text-subtext0">No examples for {name} yet.</p>
 				) : (
 					entries.map((e) => (
 						<Section key={e.name} label={e.label}>
-							<div data-example={e.name} className="flex flex-wrap items-start gap-5">
+							<div data-example={e.label} className="flex flex-wrap items-start gap-5">
 								<e.Component />
 							</div>
 						</Section>

@@ -109,9 +109,10 @@ describe("ExamplePreview", () => {
 				<ExamplePreview name="item" sel={{ type: "slot", slot: "item-title" }} />
 			</TooltipProvider>,
 		);
-		// shadcn's example labels render on top.
-		expect(screen.getByText("Demo")).toBeTruthy();
-		expect(screen.getByText("Variant")).toBeTruthy();
+		// Both consolidated examples render — asserted via content outside the extracted slot, so it
+		// isn't also duplicated in the snapshots below.
+		expect(screen.getByText("Open")).toBeTruthy(); // item-demo action
+		expect(screen.getByText("Featured")).toBeTruthy(); // item-group header
 		// Extraction found item-title occurrences (not the empty state).
 		expect(screen.queryByText(/Not present/)).toBeNull();
 		expect(container.querySelectorAll("[data-slot='item-title']").length).toBeGreaterThan(0);
