@@ -33,22 +33,12 @@ import {
 } from "~/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Textarea } from "~/components/ui/textarea";
+import { useScene } from "~/stores/scene";
 import { client } from "~/utils/api";
 import { cn } from "~/utils/cn";
 
-const SCENES = [
-	{ key: "dashboard", label: "Dashboard" },
-	{ key: "cards", label: "Cards" },
-	{ key: "mail", label: "Mail" },
-	{ key: "marketing", label: "Marketing" },
-	{ key: "forms", label: "Forms" },
-	{ key: "surfaces", label: "Surfaces" },
-] as const;
-
-type SceneKey = (typeof SCENES)[number]["key"];
-
 export function PreviewCanvas({ variantStrip }: { variantStrip?: ReactNode }) {
-	const [scene, setScene] = useState<SceneKey>("dashboard");
+	const scene = useScene((s) => s.scene);
 	const [source, setSource] = useState<SourceHit | null>(null);
 
 	// Click any stamped scene element → fetch + show its TSX. Clicks on the variant strip,
@@ -84,21 +74,6 @@ export function PreviewCanvas({ variantStrip }: { variantStrip?: ReactNode }) {
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
-			<div className="flex shrink-0 items-center gap-1 border-b border-border px-4 py-2">
-				{SCENES.map((s) => (
-					<button
-						key={s.key}
-						type="button"
-						onClick={() => setScene(s.key)}
-						className={cn(
-							"cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors",
-							scene === s.key ? "bg-interactive text-text" : "text-subtext0 hover:text-text",
-						)}
-					>
-						{s.label}
-					</button>
-				))}
-			</div>
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: dev-only click-to-source on the scene canvas. */}
 			{/* biome-ignore lint/a11y/useKeyWithClickEvents: source inspection is a pointer affordance. */}
 			<div data-preview className="min-h-0 flex-1 overflow-auto p-6" onClick={onPreviewClick}>

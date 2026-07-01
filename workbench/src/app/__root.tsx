@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { previews } from "~/components/previews";
+import { SceneTabs } from "~/components/scene-tabs";
 import {
 	Select,
 	SelectContent,
@@ -131,6 +132,7 @@ function Navbar() {
 				<span className="size-3 rounded-full bg-primary" />
 				<span className="font-semibold tracking-tight">Miami Wind</span>
 				<ScopeSelect />
+				<SceneTabs />
 			</div>
 			<div className="flex items-center gap-2">
 				<span className="text-sm text-subtext0">
