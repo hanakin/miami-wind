@@ -112,8 +112,10 @@ describe("ExamplePreview", () => {
 		// An example renders — asserted via content outside the extracted slot (item-title), so it
 		// isn't also duplicated in the snapshots below.
 		expect(screen.getByText("Action")).toBeTruthy(); // item-demo action button
-		// Extraction found item-title occurrences (not the empty state).
+		// Extraction found item-title (not the empty state) and shows exactly one instance — the
+		// default use of the slot, not every occurrence.
 		expect(screen.queryByText(/Not present/)).toBeNull();
+		expect(screen.getByText(/^from /)).toBeTruthy();
 		expect(container.querySelectorAll("[data-slot='item-title']").length).toBeGreaterThan(0);
 	});
 });

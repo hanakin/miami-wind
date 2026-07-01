@@ -22,31 +22,28 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 
 	const slot = sel.type === "slot" ? sel.slot : null;
 	const topRef = useRef<HTMLDivElement>(null);
-	const [snaps, setSnaps] = useState<Snap[]>([]);
+	const [snap, setSnap] = useState<Snap | null>(null);
 
-	// Extract the selected slot from the rendered examples above. Re-run on slot/name change and when
-	// the examples subtree mutates (async-loaded icons, or HMR after a slot edit is saved).
+	// Show the DEFAULT use of the selected slot: its first occurrence across the examples, in order —
+	// one instance only, so it's unambiguous what the left inspector is editing (the slot's classes
+	// apply to every occurrence). Re-runs on slot change and once after mount for async-loaded icons.
 	useEffect(() => {
 		const root = topRef.current;
 		if (!root || !slot) {
-			setSnaps([]);
+			setSnap(null);
 			return;
 		}
 		let alive = true;
 		const extract = () => {
 			if (!alive) return;
-			const seen = new Set<string>();
-			const out: Snap[] = [];
 			for (const section of root.querySelectorAll<HTMLElement>("[data-example]")) {
-				const label = section.dataset.example ?? "";
-				for (const el of section.querySelectorAll<HTMLElement>(`[data-slot="${slot}"]`)) {
-					const html = el.outerHTML;
-					if (seen.has(html)) continue;
-					seen.add(html);
-					out.push({ example: label, html });
+				const el = section.querySelector<HTMLElement>(`[data-slot="${slot}"]`);
+				if (el) {
+					setSnap({ example: section.dataset.example ?? "", html: el.outerHTML });
+					return;
 				}
 			}
-			setSnaps(out);
+			setSnap(null);
 		};
 		extract();
 		// One delayed pass catches async-loaded icons. Deliberately NOT a live MutationObserver:
@@ -77,18 +74,14 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 
 			{slot && (
 				<Section label={`slot · ${slotLabel(name, slot)}`}>
-					{snaps.length === 0 ? (
-						<p className="text-sm text-subtext0">Not present in these examples.</p>
-					) : (
-						<div className="flex flex-wrap items-start gap-5">
-							{snaps.map((s) => (
-								<div key={s.html} className="flex flex-col items-start gap-1.5">
-									{/* biome-ignore lint/security/noDangerouslySetInnerHtml: cloned from our own rendered examples above. */}
-									<div dangerouslySetInnerHTML={{ __html: s.html }} />
-									<span className="font-mono text-[10px] text-subtext0">{s.example}</span>
-								</div>
-							))}
+					{snap ? (
+						<div className="flex flex-col items-start gap-1.5">
+							{/* biome-ignore lint/security/noDangerouslySetInnerHtml: cloned from our own rendered examples above. */}
+							<div dangerouslySetInnerHTML={{ __html: snap.html }} />
+							<span className="font-mono text-[10px] text-subtext0">from {snap.example}</span>
 						</div>
+					) : (
+						<p className="text-sm text-subtext0">Not present in these examples.</p>
 					)}
 				</Section>
 			)}
