@@ -136,6 +136,9 @@
 					"--muted-foreground": "var(--color-grey-700)",
 					"--muted": "var(--color-grey-500)"
 				}
+			},
+			"css": {
+				"@layer base": "button:where(button, [role=\"button\"]):not([disabled]) {\n\t\tcursor: pointer;\n\t}"
 			}
 		},
 		{
@@ -156,9 +159,7 @@
 			"type": "registry:ui",
 			"title": "Icon",
 			"description": "Icon renderer. Discriminated union: type 'iconify' (string name like 'mdi:add') or 'custom' (an SVG component). 20px default size. No baked default set — 'prefer mdi' is agent guidance, not code.",
-			"dependencies": [
-				"@iconify/react"
-			],
+			"dependencies": ["@iconify/react"],
 			"files": [
 				{
 					"path": "registry/components/ui/icon.tsx",
@@ -171,13 +172,8 @@
 			"type": "registry:file",
 			"title": "Button variants (cva)",
 			"description": "Miami Wind button variants. The shadcn button component is vanilla (from shadcn's own registry); this ships only the cva layer. Pink primary, cyan secondary, error destructive; pointer cursor, visible hover/active, no ring.",
-			"registryDependencies": [
-				"theme",
-				"mw-cva"
-			],
-			"dependencies": [
-				"class-variance-authority"
-			],
+			"registryDependencies": ["theme", "mw-cva"],
+			"dependencies": ["class-variance-authority"],
 			"files": [
 				{
 					"path": "registry/components/ui/cva/button.ts",
@@ -206,9 +202,7 @@
 			"type": "registry:ui",
 			"title": "Command",
 			"description": "Miami Wind command — customized primitive (full source).",
-			"registryDependencies": [
-				"theme"
-			],
+			"registryDependencies": ["theme"],
 			"files": [
 				{
 					"path": "registry/components/ui/command.tsx",
@@ -216,19 +210,14 @@
 					"target": "~/components/ui/command.tsx"
 				}
 			],
-			"dependencies": [
-				"cmdk",
-				"lucide-react"
-			]
+			"dependencies": ["cmdk", "lucide-react"]
 		},
 		{
 			"name": "dropdown-menu",
 			"type": "registry:ui",
 			"title": "Dropdown Menu",
 			"description": "Miami Wind dropdown-menu — customized primitive (full source).",
-			"registryDependencies": [
-				"theme"
-			],
+			"registryDependencies": ["theme"],
 			"files": [
 				{
 					"path": "registry/components/ui/dropdown-menu.tsx",
@@ -236,10 +225,7 @@
 					"target": "~/components/ui/dropdown-menu.tsx"
 				}
 			],
-			"dependencies": [
-				"lucide-react",
-				"radix-ui"
-			]
+			"dependencies": ["lucide-react", "radix-ui"]
 		}
 	]
 }

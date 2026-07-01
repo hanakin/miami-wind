@@ -130,15 +130,8 @@
 	}
 }
 
-/* sugar-high token colors for the click-to-source viewer, mapped to the Catppuccin palette. */
-.sh-code {
-	--sh-class: var(--color-yellow);
-	--sh-identifier: var(--color-text);
-	--sh-keyword: var(--color-purple);
-	--sh-string: var(--color-green);
-	--sh-comment: var(--color-grey-500);
-	--sh-jsxliterals: var(--color-blue);
-	--sh-property: var(--color-blue);
-	--sh-entity: var(--color-blue);
-	--sh-sign: var(--color-subtext0);
+@layer base {
+	button:where(button, [role="button"]):not([disabled]) {
+		cursor: pointer;
+	}
 }
