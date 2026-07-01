@@ -38,5 +38,17 @@
 		"formatter": {
 			"indentStyle": "tab"
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["src/examples/**"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useValidAnchor": "off"
+					}
+				}
+			}
+		}
+	]
 }

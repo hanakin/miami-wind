@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SourcePanel } from "~/components/component-views";
 import { CvaControls } from "~/components/cva-controls";
-import { EditorLayout, EditorPreview } from "~/components/editor-layout";
-import { OpenRender } from "~/components/open-renders";
+import { EditorLayout } from "~/components/editor-layout";
+import { ExamplePreview } from "~/components/example-preview";
 import {
 	useComponentModel,
 	useComponentSlots,
@@ -22,9 +22,8 @@ function ComponentScope() {
 	return <ComponentEditor key={name} name={name} />;
 }
 
-// One component's editor: inspector on the left, live preview on the right. The selection (the cva
-// target / variant / surface) is held here and shared with both panes, so picking a variant filters
-// the preview and picking a state drives the controls. Custom primitives also show their source.
+// One component's editor: controls on the left; on the right, shadcn's example set with the selected
+// slot extracted beneath it. Custom primitives also show their read-only source.
 function ComponentEditor({ name }: { name: string }) {
 	useEnsureModel(name);
 	useComponentSlots(name);
@@ -37,12 +36,11 @@ function ComponentEditor({ name }: { name: string }) {
 	return (
 		<EditorLayout
 			controls={<CvaControls name={name} sel={sel} onSel={setSel} />}
-			variantStrip={
-				<>
-					<EditorPreview name={name} model={model} sel={sel} isCustom={isCustom} />
-					<OpenRender name={name} />
+			preview={
+				<div className="flex h-full min-h-0 flex-col overflow-auto">
+					<ExamplePreview name={name} sel={sel} />
 					{isCustom && <SourcePanel name={name} />}
-				</>
+				</div>
 			}
 		/>
 	);

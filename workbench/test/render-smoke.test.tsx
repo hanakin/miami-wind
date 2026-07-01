@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { Icon } from "@registry-ui/icon";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { EditorPreview } from "~/components/editor-layout";
+import { ExamplePreview } from "~/components/example-preview";
 import { OpenRender, openRenders } from "~/components/open-renders";
 import { type PreviewRender, previews } from "~/components/previews";
 import { TooltipProvider } from "~/components/ui/tooltip";
-import type { CvaModel } from "../server/lib/cva-codec";
+import { examples } from "~/examples";
 
 afterEach(cleanup);
 
@@ -86,35 +86,34 @@ describe("exploded surfaces render in-scope", () => {
 	}
 });
 
-// The preview filters to the selected variant and renders each interaction state as a static tile.
-describe("EditorPreview", () => {
-	const model: CvaModel = {
-		name: "button",
-		localName: "button",
-		exportName: "buttonVariants",
-		base: "inline-flex",
-		variants: { variant: { default: "bg-primary", link: "bg-transparent hover:underline" } },
-		defaultVariants: { variant: "default" },
-		compoundVariants: [],
-	};
+// The static examples index feeds both the picker and the example preview.
+describe("examples index", () => {
+	it("every entry has a component and a label under its component key", () => {
+		for (const [comp, list] of Object.entries(examples)) {
+			expect(list.length).toBeGreaterThan(0);
+			for (const e of list) {
+				expect(typeof e.Component).toBe("function");
+				expect(e.label).toBeTruthy();
+				expect(e.name.startsWith(comp)).toBe(true);
+			}
+		}
+	});
+});
 
-	it("filters to the selected variant and renders a static tile per state", () => {
-		const { getByText, container } = render(
+// Top section renders shadcn's example set; selecting a slot extracts that data-slot from those same
+// rendered examples into the section below.
+describe("ExamplePreview", () => {
+	it("renders the item example set and extracts a selected slot", () => {
+		const { container } = render(
 			<TooltipProvider>
-				<div data-preview>
-					<EditorPreview
-						name="button"
-						model={model}
-						sel={{ type: "cva", target: { kind: "option", axis: "variant", option: "link" } }}
-					/>
-				</div>
+				<ExamplePreview name="item" sel={{ type: "slot", slot: "item-title" }} />
 			</TooltipProvider>,
 		);
-		// Live row reflects the chosen variant, not "all variants".
-		expect(getByText("live — variant · link")).toBeTruthy();
-		// One inert (non-interactive) tile per interaction state — Base/Hover/Focus/Active/Disabled.
-		expect(container.querySelectorAll("[inert]").length).toBe(5);
-		expect(getByText("Hover")).toBeTruthy();
-		expect(getByText("Disabled")).toBeTruthy();
+		// shadcn's example labels render on top.
+		expect(screen.getByText("Demo")).toBeTruthy();
+		expect(screen.getByText("Variant")).toBeTruthy();
+		// Extraction found item-title occurrences (not the empty state).
+		expect(screen.queryByText(/Not present/)).toBeNull();
+		expect(container.querySelectorAll("[data-slot='item-title']").length).toBeGreaterThan(0);
 	});
 });
