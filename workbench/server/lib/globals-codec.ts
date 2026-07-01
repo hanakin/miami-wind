@@ -76,5 +76,5 @@ ${bridges}
 \t\tfont-family: var(--font-sans);
 \t}
 }
-`;
+${model.customCss?.trim() ? `\n${model.customCss.trim()}\n` : ""}`;
 }

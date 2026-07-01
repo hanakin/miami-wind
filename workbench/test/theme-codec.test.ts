@@ -32,6 +32,7 @@ describe("theme-codec", () => {
 	it("updates a single token value", () => {
 		const model = parseTheme(registry);
 		const edited = {
+			...model,
 			tokens: model.tokens.map((t) => (t.name === "--color-pink" ? { ...t, value: "#ff0000" } : t)),
 		};
 		const next = applyTheme(registry, edited);

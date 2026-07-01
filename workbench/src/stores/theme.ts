@@ -7,8 +7,11 @@ import type { ThemeToken } from "../../server/lib/theme-codec";
 interface ThemeState {
 	tokens: ThemeToken[];
 	saved: ThemeToken[];
-	loadSaved: (tokens: ThemeToken[]) => void;
+	customCss: string;
+	savedCss: string;
+	loadSaved: (tokens: ThemeToken[], customCss: string) => void;
 	setValue: (name: string, value: string) => void;
+	setCustomCss: (css: string) => void;
 	addToken: (token: ThemeToken) => void;
 	removeToken: (name: string) => void;
 	revert: () => void;
@@ -18,16 +21,20 @@ interface ThemeState {
 export const themeStore = createStore<ThemeState>((set) => ({
 	tokens: [],
 	saved: [],
-	loadSaved: (tokens) => set((s) => (s.saved.length ? s : { tokens, saved: tokens })),
+	customCss: "",
+	savedCss: "",
+	loadSaved: (tokens, customCss) =>
+		set((s) => (s.saved.length ? s : { tokens, saved: tokens, customCss, savedCss: customCss })),
 	setValue: (name, value) =>
 		set((s) => ({ tokens: s.tokens.map((t) => (t.name === name ? { ...t, value } : t)) })),
+	setCustomCss: (css) => set({ customCss: css }),
 	addToken: (token) =>
 		set((s) =>
 			s.tokens.some((t) => t.name === token.name) ? s : { tokens: [...s.tokens, token] },
 		),
 	removeToken: (name) => set((s) => ({ tokens: s.tokens.filter((t) => t.name !== name) })),
-	revert: () => set((s) => ({ tokens: s.saved })),
-	markSaved: () => set((s) => ({ saved: s.tokens })),
+	revert: () => set((s) => ({ tokens: s.saved, customCss: s.savedCss })),
+	markSaved: () => set((s) => ({ saved: s.tokens, savedCss: s.customCss })),
 }));
 
 export function useTheme<T>(selector: (s: ThemeState) => T): T {
@@ -35,6 +42,7 @@ export function useTheme<T>(selector: (s: ThemeState) => T): T {
 }
 
 export function themeDirty(s: ThemeState): boolean {
+	if (s.customCss !== s.savedCss) return true;
 	if (s.tokens.length !== s.saved.length) return true;
 	const saved = new Map(s.saved.map((t) => [t.name, t.value]));
 	return s.tokens.some((t) => saved.get(t.name) !== t.value);

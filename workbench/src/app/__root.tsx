@@ -1,6 +1,12 @@
 import { Icon } from "@registry-ui/icon";
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext, Outlet, useNavigate, useParams } from "@tanstack/react-router";
+import {
+	createRootRouteWithContext,
+	Outlet,
+	useNavigate,
+	useParams,
+	useRouterState,
+} from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { previews } from "~/components/previews";
 import {
@@ -80,6 +86,7 @@ function Navbar() {
 	const cvaDirty = useDirtyCount();
 	const themeIsDirty = useTheme(themeDirty);
 	const tokens = useTheme((s) => s.tokens);
+	const customCss = useTheme((s) => s.customCss);
 	const saveTheme = useSaveTheme();
 	const { saveAll } = useSaveAll();
 	const { saveSlots, count: slotDirty } = useSaveSlots();
@@ -87,7 +94,7 @@ function Navbar() {
 	const pending = saveTheme.isPending;
 
 	const onSave = () => {
-		if (themeIsDirty) saveTheme.mutate({ tokens });
+		if (themeIsDirty) saveTheme.mutate({ tokens, customCss });
 		saveAll();
 		if (slotDirty) saveSlots();
 	};
@@ -134,7 +141,8 @@ function Navbar() {
 function ScopeSelect() {
 	const navigate = useNavigate();
 	const params = useParams({ strict: false }) as { name?: string };
-	const current = params.name ?? "theme";
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const current = pathname === "/css" ? "css" : (params.name ?? "theme");
 	const primitives = usePrimitives();
 	const custom = new Set(primitives.data?.custom ?? []);
 	const models = useWorkbench((s) => s.models);
@@ -151,7 +159,9 @@ function ScopeSelect() {
 			onValueChange={(v) =>
 				v === "theme"
 					? navigate({ to: "/" })
-					: navigate({ to: "/components/$name", params: { name: v } })
+					: v === "css"
+						? navigate({ to: "/css" })
+						: navigate({ to: "/components/$name", params: { name: v } })
 			}
 		>
 			<SelectTrigger className="h-8 w-56">
@@ -159,6 +169,7 @@ function ScopeSelect() {
 			</SelectTrigger>
 			<SelectContent>
 				<SelectItem value="theme">Theme</SelectItem>
+				<SelectItem value="css">Custom CSS</SelectItem>
 				{customNames.length > 0 && (
 					<SelectGroup>
 						<SelectLabel>Custom primitives</SelectLabel>

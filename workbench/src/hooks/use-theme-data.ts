@@ -9,10 +9,10 @@ export function useThemeData() {
 		queryKey: ["theme"],
 		queryFn: async () => client.api.theme.$get().then((r) => r.json()),
 	});
-	const tokens = query.data?.tokens as ThemeToken[] | undefined;
+	const model = query.data;
 	useEffect(() => {
-		if (tokens) themeStore.getState().loadSaved(tokens);
-	}, [tokens]);
+		if (model) themeStore.getState().loadSaved(model.tokens as ThemeToken[], model.customCss ?? "");
+	}, [model]);
 	return query;
 }
 

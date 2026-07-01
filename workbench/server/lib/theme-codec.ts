@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { type CssValue, parseCss, serializeCss } from "./css-codec";
 
 /**
  * theme-codec — read/write the Miami Wind theme tokens stored in registry.json
@@ -14,6 +15,8 @@ export const themeTokenSchema = z.object({
 
 export const themeModelSchema = z.object({
 	tokens: z.array(themeTokenSchema),
+	// Cross-cutting CSS shipped on the theme item's `css` field, as raw text for the editor.
+	customCss: z.string().default(""),
 });
 
 export type ThemeToken = z.infer<typeof themeTokenSchema>;
@@ -23,6 +26,7 @@ type CssVars = { theme?: Record<string, string>; dark?: Record<string, string> }
 interface RegistryItem {
 	name: string;
 	cssVars?: CssVars;
+	css?: Record<string, CssValue>;
 	[k: string]: unknown;
 }
 export interface RegistryJson {
@@ -40,7 +44,7 @@ export function parseTheme(registry: RegistryJson): ThemeModel {
 	for (const [name, value] of Object.entries(item.cssVars.dark ?? {})) {
 		tokens.push({ name, value, layer: "dark" });
 	}
-	return { tokens };
+	return { tokens, customCss: serializeCss(item.css ?? {}) };
 }
 
 export function applyTheme(registry: RegistryJson, model: ThemeModel): RegistryJson {
@@ -53,5 +57,8 @@ export function applyTheme(registry: RegistryJson, model: ThemeModel): RegistryJ
 		(t.layer === "theme" ? theme : dark)[t.name] = t.value;
 	}
 	item.cssVars = { theme, dark };
+	const css = parseCss(model.customCss ?? "");
+	if (Object.keys(css).length > 0) item.css = css;
+	else delete item.css;
 	return next;
 }
