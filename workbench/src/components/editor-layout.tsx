@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PreviewCanvas } from "~/components/preview-canvas";
 import { type PreviewProps, previews } from "~/components/previews";
+import { effectiveClasses, type Selection, selectionVariantProps } from "~/utils/editor-selection";
 import { flattenState, STATES } from "~/utils/tw-tokens";
 import type { CvaModel } from "../../server/lib/cva-codec";
 
@@ -20,16 +21,6 @@ export function EditorLayout({
 	);
 }
 
-// The default-variant class string: base + each default option's classes — what the bare
-// component actually renders with, so forced-state previews start from the right baseline.
-function defaultClasses(model: CvaModel): string {
-	const parts = [model.base];
-	for (const [axis, val] of Object.entries(model.defaultVariants)) {
-		if (typeof val === "string") parts.push(model.variants[axis]?.[val] ?? "");
-	}
-	return parts.filter(Boolean).join(" ");
-}
-
 // Custom primitives (a bare <Icon/>, a leaf with no cva root) expose no data-slot of their own,
 // so the live override has nothing to target. Wrap them in one so the inspector restyles them too.
 function SlotWrap({ name, wrap, children }: { name: string; wrap: boolean; children: ReactNode }) {
@@ -41,70 +32,74 @@ function SlotWrap({ name, wrap, children }: { name: string; wrap: boolean; child
 	);
 }
 
-// Every interaction state, rendered live. Disabled uses the real prop; hover/focus/active are
-// forced by promoting that state's utilities to base — works for previews that forward className
-// to the styled root (button, badge, toggle); others fall back to their base look.
-function StatesRow({ name, model, wrap }: { name: string; model: CvaModel; wrap: boolean }) {
-	const render = previews[name];
-	if (!render) return null;
-	const base = defaultClasses(model);
+function Section({ label, children }: { label: string; children: ReactNode }) {
 	return (
 		<div>
-			<div className="mb-2.5 text-xs font-medium uppercase tracking-wide text-subtext0">states</div>
-			<div className="flex flex-wrap items-end gap-5">
-				{STATES.map((s) => {
-					const props: PreviewProps = {};
-					if (s.key === "disabled:") props.disabled = true;
-					else if (s.key) {
-						const flat = flattenState(base, s.key);
-						if (flat) props.className = flat;
-					}
-					return (
-						<div key={s.key || "base"} className="flex flex-col items-center gap-2">
-							<SlotWrap name={name} wrap={wrap}>
-								{render(props)}
-							</SlotWrap>
-							<span className="font-mono text-[10px] text-subtext0">{s.label}</span>
-						</div>
-					);
-				})}
+			<div className="mb-2.5 text-xs font-medium uppercase tracking-wide text-subtext0">
+				{label}
 			</div>
+			{children}
 		</div>
 	);
 }
 
-// The scoped component's states + variants, rendered live and labelled — the real instances.
-export function VariantStrip({
+// The component preview, filtered to the current selection. One real, interactive instance (use it —
+// open it, hover it), plus a row of STATIC tiles for each interaction state. The tiles are `inert`,
+// so they show only the forced-state look with no real hover/focus/click stacking on top — which is
+// what made the old all-live grid feel broken. Forced states work for previews that forward
+// className to their styled root (button, badge, toggle…); others fall back to their base look.
+export function EditorPreview({
 	name,
 	model,
+	sel,
 	isCustom = false,
 }: {
 	name: string;
 	model: CvaModel;
+	sel: Selection;
 	isCustom?: boolean;
 }) {
 	const render = previews[name];
 	if (!render) return null;
+	const variantProps = selectionVariantProps(sel) as PreviewProps;
+	const base = effectiveClasses(model, selectionVariantProps(sel));
+	const label =
+		sel.type === "cva" && sel.target.kind === "option"
+			? `${sel.target.axis} · ${sel.target.option}`
+			: "default";
+
 	return (
-		<div className="mb-6 flex flex-col gap-5 border-b border-border pb-6">
-			<StatesRow name={name} model={model} wrap={isCustom} />
-			{Object.entries(model.variants).map(([axis, opts]) => (
-				<div key={axis}>
-					<div className="mb-2.5 text-xs font-medium uppercase tracking-wide text-subtext0">
-						{axis}
-					</div>
-					<div className="flex flex-wrap items-end gap-5">
-						{Object.keys(opts).map((opt) => (
-							<div key={opt} className="flex flex-col items-center gap-2">
-								<SlotWrap name={name} wrap={isCustom}>
-									{render({ [axis]: opt })}
-								</SlotWrap>
-								<span className="font-mono text-[10px] text-subtext0">{opt}</span>
-							</div>
-						))}
-					</div>
+		<div className="mb-6 flex flex-col gap-6 border-b border-border pb-6">
+			<Section label={`live — ${label}`}>
+				<div className="flex flex-wrap items-end gap-5">
+					<SlotWrap name={name} wrap={isCustom}>
+						{render(variantProps)}
+					</SlotWrap>
 				</div>
-			))}
+			</Section>
+
+			<Section label="states">
+				<div className="flex flex-wrap items-end gap-5">
+					{STATES.map((s) => {
+						const props: PreviewProps = { ...variantProps };
+						if (s.key === "disabled:") props.disabled = true;
+						else if (s.key) {
+							const flat = flattenState(base, s.key);
+							if (flat) props.className = flat;
+						}
+						return (
+							<div key={s.key || "base"} className="flex flex-col items-center gap-2">
+								<div inert className="pointer-events-none">
+									<SlotWrap name={name} wrap={isCustom}>
+										{render(props)}
+									</SlotWrap>
+								</div>
+								<span className="font-mono text-[10px] text-subtext0">{s.label}</span>
+							</div>
+						);
+					})}
+				</div>
+			</Section>
 		</div>
 	);
 }

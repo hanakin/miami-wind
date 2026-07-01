@@ -1,5 +1,6 @@
 import { Icon } from "@registry-ui/icon";
-import { type ReactNode, useState } from "react";
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useState } from "react";
+import { highlight } from "sugar-high";
 import { CardsScene } from "~/components/scenes/cards-scene";
 import { MailScene } from "~/components/scenes/mail-scene";
 import { MarketingScene } from "~/components/scenes/marketing-scene";
@@ -32,6 +33,7 @@ import {
 } from "~/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Textarea } from "~/components/ui/textarea";
+import { client } from "~/utils/api";
 import { cn } from "~/utils/cn";
 
 const SCENES = [
@@ -47,6 +49,39 @@ type SceneKey = (typeof SCENES)[number]["key"];
 
 export function PreviewCanvas({ variantStrip }: { variantStrip?: ReactNode }) {
 	const [scene, setScene] = useState<SceneKey>("dashboard");
+	const [source, setSource] = useState<SourceHit | null>(null);
+
+	// Click any stamped scene element → fetch + show its TSX. Clicks on the variant strip,
+	// surfaces, or tab buttons carry no [data-loc] and fall through untouched.
+	const onPreviewClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
+		const el = (e.target as HTMLElement).closest<HTMLElement>("[data-loc]");
+		const loc = el?.dataset.loc;
+		if (!loc) return;
+		// "<path>:<start>:<end>" — path may itself be empty of colons, so split from the right.
+		const end = loc.lastIndexOf(":");
+		const startSep = loc.lastIndexOf(":", end - 1);
+		const path = loc.slice(0, startSep);
+		const start = Number(loc.slice(startSep + 1, end));
+		const endN = Number(loc.slice(end + 1));
+		e.preventDefault();
+		setSource({ path, start, end: endN, code: null });
+		// Only the latest click wins: a stale response for a different element is dropped.
+		const fresh = (s: SourceHit | null) => s && s.path === path && s.start === start;
+		(async () => {
+			try {
+				const res = await client.api.source.$get({
+					query: { path, start: String(start), end: String(endN) },
+				});
+				const code = res.ok
+					? (await res.json()).source
+					: `// could not load source (${res.status})`;
+				setSource((s) => (fresh(s) ? { ...(s as SourceHit), code } : s));
+			} catch {
+				setSource((s) => (fresh(s) ? { ...(s as SourceHit), code: "// failed to load" } : s));
+			}
+		})();
+	}, []);
+
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
 			<div className="flex shrink-0 items-center gap-1 border-b border-border px-4 py-2">
@@ -64,7 +99,9 @@ export function PreviewCanvas({ variantStrip }: { variantStrip?: ReactNode }) {
 					</button>
 				))}
 			</div>
-			<div data-preview className="min-h-0 flex-1 overflow-auto p-6">
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: dev-only click-to-source on the scene canvas. */}
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: source inspection is a pointer affordance. */}
+			<div data-preview className="min-h-0 flex-1 overflow-auto p-6" onClick={onPreviewClick}>
 				{variantStrip}
 				{scene === "dashboard" && <Dashboard />}
 				{scene === "cards" && <CardsScene />}
@@ -72,6 +109,83 @@ export function PreviewCanvas({ variantStrip }: { variantStrip?: ReactNode }) {
 				{scene === "marketing" && <MarketingScene />}
 				{scene === "forms" && <Forms />}
 				{scene === "surfaces" && <Surfaces />}
+			</div>
+			{source && <SceneSourceDialog hit={source} onClose={() => setSource(null)} />}
+		</div>
+	);
+}
+
+// --- Click-to-source popover -------------------------------------------------
+
+type SourceHit = {
+	path: string;
+	start: number;
+	end: number;
+	code: string | null;
+};
+
+// A centered modal showing the clicked element's source. Closes on Escape or a backdrop click.
+// Kept simple: no portal/focus-trap library — it's a dev-only source viewer.
+function SceneSourceDialog({ hit, onClose }: { hit: SourceHit; onClose: () => void }) {
+	const [copied, setCopied] = useState(false);
+
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [onClose]);
+
+	const file = hit.path.replace("src/components/", "");
+
+	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: backdrop click-to-dismiss for a dev tool.
+		// biome-ignore lint/a11y/useKeyWithClickEvents: Escape handles keyboard dismissal.
+		<div
+			className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
+			onClick={(e) => {
+				if (e.target === e.currentTarget) onClose();
+			}}
+		>
+			<div
+				role="dialog"
+				aria-modal="true"
+				aria-label={`Source: ${file}`}
+				className="flex max-h-[85vh] w-[min(90vw,72rem)] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
+			>
+				<div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+					<span className="truncate font-mono text-xs text-subtext0">{file}</span>
+					<div className="flex shrink-0 items-center gap-1">
+						<button
+							type="button"
+							onClick={() => {
+								if (!hit.code) return;
+								navigator.clipboard?.writeText(hit.code);
+								setCopied(true);
+								setTimeout(() => setCopied(false), 1200);
+							}}
+							className="cursor-pointer rounded-sm p-1 text-subtext0 transition-colors hover:bg-accent hover:text-accent-foreground"
+							title="Copy source"
+						>
+							<Icon icon={copied ? "mdi:check" : "mdi:content-copy"} size={16} />
+						</button>
+						<button
+							type="button"
+							onClick={onClose}
+							className="cursor-pointer rounded-sm p-1 text-subtext0 transition-colors hover:bg-accent hover:text-accent-foreground"
+							title="Close"
+						>
+							<Icon icon="mdi:close" size={16} />
+						</button>
+					</div>
+				</div>
+				<pre className="sh-code min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-foreground">
+					{hit.code == null ? (
+						<code className="text-subtext0">Loading…</code>
+					) : (
+						// biome-ignore lint/security/noDangerouslySetInnerHtml: sugar-high escapes the code; the source is our own path-guarded src/ slice.
+						<code dangerouslySetInnerHTML={{ __html: highlight(hit.code) }} />
+					)}
+				</pre>
 			</div>
 		</div>
 	);

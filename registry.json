@@ -40,7 +40,7 @@
 					"target": "~/AGENT.md"
 				},
 				{
-					"path": "conventions/copilot-instructions.md",
+					"path": "conventions/.github/copilot-instructions.md",
 					"type": "registry:file",
 					"target": "~/.github/copilot-instructions.md"
 				}
@@ -196,7 +196,49 @@
 				"theme",
 				"mw-cva",
 				"icon",
-				"button"
+				"button",
+				"command",
+				"dropdown-menu"
+			]
+		},
+		{
+			"name": "command",
+			"type": "registry:ui",
+			"title": "Command",
+			"description": "Miami Wind command — customized primitive (full source).",
+			"registryDependencies": [
+				"theme"
+			],
+			"files": [
+				{
+					"path": "registry/components/ui/command.tsx",
+					"type": "registry:ui",
+					"target": "~/components/ui/command.tsx"
+				}
+			],
+			"dependencies": [
+				"cmdk",
+				"lucide-react"
+			]
+		},
+		{
+			"name": "dropdown-menu",
+			"type": "registry:ui",
+			"title": "Dropdown Menu",
+			"description": "Miami Wind dropdown-menu — customized primitive (full source).",
+			"registryDependencies": [
+				"theme"
+			],
+			"files": [
+				{
+					"path": "registry/components/ui/dropdown-menu.tsx",
+					"type": "registry:ui",
+					"target": "~/components/ui/dropdown-menu.tsx"
+				}
+			],
+			"dependencies": [
+				"lucide-react",
+				"radix-ui"
 			]
 		}
 	]

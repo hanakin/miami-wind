@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 
 const button = cva(
-	"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 hover:bg-bright-pink focus-visible:bg-bright-pink active:bg-bright-pink cursor-pointer",
+	"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 cursor-pointer",
 	{
 		variants: {
 			variant: {
@@ -15,7 +15,7 @@ const button = cva(
 					"border border-input bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent active:brightness-95 hover:text-primary",
 				ghost:
 					"bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent hover:text-primary",
-				link: "bg-transparent text-[var(--color-sky-400)] underline-offset-4 hover:underline focus-visible:underline",
+				link: "bg-transparent text-[var(--color-sky-400)] underline-offset-4 hover:underline focus-visible:underline hover:text-secondary",
 			},
 			size: {
 				default: "h-9 px-4 py-2",

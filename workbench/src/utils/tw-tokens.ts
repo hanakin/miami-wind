@@ -125,6 +125,10 @@ export const COLOR_TOKENS = [
 ] as const;
 
 const COLOR_SET = new Set<string>(COLOR_TOKENS);
+// Valid CSS color values that aren't theme tokens — used to override an inherited color
+// (e.g. bg-transparent kills a hover bg inherited from base). Order = picker order.
+export const COLOR_KEYWORDS = ["transparent", "current", "inherit"] as const;
+const KEYWORD_SET = new Set<string>(COLOR_KEYWORDS);
 export type ColorProp = "bg" | "text" | "border";
 
 export interface ColorValue {
@@ -136,7 +140,7 @@ export function parseColor(utility: string, prop: ColorProp): ColorValue | null 
 	if (!utility.startsWith(`${prop}-`)) return null;
 	const rest = utility.slice(prop.length + 1);
 	const [token, op] = rest.split("/");
-	if (!token || !COLOR_SET.has(token)) return null;
+	if (!token || !(COLOR_SET.has(token) || KEYWORD_SET.has(token))) return null;
 	return { token, opacity: op ? Number(op) : 100 };
 }
 
@@ -150,6 +154,9 @@ export function isColor(prop: ColorProp) {
 
 /** CSS color for a token, resilient to shadcn-bridge tokens that exist only as `--x` (not `--color-x`). */
 export function swatchVar(token: string): string {
+	if (token === "transparent") return "transparent";
+	if (token === "current") return "currentColor";
+	if (token === "inherit") return "inherit";
 	return `var(--color-${token}, var(--${token}))`;
 }
 
@@ -172,6 +179,30 @@ export function readColor(value: string, state: string, prop: ColorProp): ReadCo
 	if (parsed) return { token: parsed.token, opacity: parsed.opacity, arbitrary: null };
 	const m = u.match(/^[a-z]+-\[(.+)\]$/);
 	return { token: null, opacity: 100, arbitrary: m?.[1] ?? null };
+}
+
+export interface EffectiveColor extends ReadColor {
+	/** True when the shown value comes from `inherited` (base/underlying), not the edited target. */
+	inherited: boolean;
+}
+
+/**
+ * The color a prop/state actually renders, across the cva cascade: the edited target's own value if
+ * it sets one, else the value inherited from `inherited` (the classes beneath it — e.g. base when
+ * editing a variant). Flagged so the UI can show "inherited" and offer an explicit override. Writes
+ * always target the own value, so setting e.g. transparent here beats the inherited color.
+ */
+export function readEffectiveColor(
+	own: string,
+	inherited: string,
+	state: string,
+	prop: ColorProp,
+): EffectiveColor {
+	if (findUtility(own, state, colorMatch(prop))) {
+		return { ...readColor(own, state, prop), inherited: false };
+	}
+	const inh = readColor(inherited, state, prop);
+	return { ...inh, inherited: inh.token !== null || inh.arbitrary !== null };
 }
 
 export function arbitraryColor(prop: ColorProp, value: string): string {

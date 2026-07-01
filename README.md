@@ -408,12 +408,18 @@ It ships **only what shadcn doesn't already give you**:
    pointers), installed to the project root.
 2. **Theme** — the dark-only Miami Wind token set (layered CSS variables; see `DESIGN.md`). Built on the
    greyscale + the Tailwind accents above.
-3. **CVAs** — one variant file per shadcn primitive you customize (`cva/button.ts`, …).
-4. **Custom primitives** — components shadcn lacks (e.g. `icon`).
-5. **The `mw-cva` plugin** — links a vanilla shadcn component to its separate cva by filename, with
-   inline fallback. Required for the cva layer.
+3. **CVAs** — a variant file (`cva/button.ts`, …) for each primitive that ships an inline `cva`; `mw-cva`
+   swaps it in at build. The shadcn component stays vanilla.
+4. **Custom components** — for a primitive **without** an inline cva (multi-part like `dropdown-menu`, or
+   single-element like `input`), the workbench vendors the *full* customized source as a `registry:ui`
+   item (`components/ui/<name>.tsx`). No build-time injection — the file is exactly what ships, with its
+   npm deps declared. This is how a change like "dropdown items get `cursor-pointer`" is captured.
+5. **Custom primitives** — components shadcn lacks (e.g. `icon`).
+6. **The `mw-cva` plugin** — links a vanilla shadcn component to its separate cva by filename, with
+   inline fallback. Required for the cva layer (custom components don't need it).
 
-It does **not** duplicate shadcn's component source or `cn`.
+It does **not** duplicate shadcn's component source or `cn` — except a primitive you've deliberately
+customized past its cva, which becomes a full custom component you then own.
 
 ### Use it
 
@@ -431,6 +437,22 @@ export default defineConfig({ plugins: [mwCva(), react()] });
 
 The theme is **authored** in `registry.json` (dark-only, layered); `pallette.json` is the canonical
 palette reference (and feeds the editor-theme repos) — it does not generate the theme.
+
+### Build & serve
+
+`registry.json` is the source of truth; compile it to the per-item JSON that `shadcn add` fetches, then
+host `public/r/` on any static origin:
+
+```sh
+bun run registry:build     # shadcn build → public/r/<name>.json
+bun run registry:serve     # static-serve public/ locally
+```
+
+Point a consumer's `components.json` at the hosted output so `@miami-wind/*` resolves:
+
+```json
+{ "registries": { "@miami-wind": "https://<host>/r/{name}.json" } }
+```
 
 ### Develop
 

@@ -2,7 +2,7 @@ import { Icon } from "@registry-ui/icon";
 import { HexColorPicker } from "react-colorful";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { cn } from "~/utils/cn";
-import { swatchVar } from "~/utils/tw-tokens";
+import { COLOR_KEYWORDS, swatchVar } from "~/utils/tw-tokens";
 
 // Tokens grouped into named sections for the picker menu (swatch beside name, not a grid).
 const TOKEN_SECTIONS: { header: string; tokens: string[] }[] = [
@@ -122,10 +122,20 @@ export function ColorControl({
 						<MenuRow
 							active={display === "none"}
 							swatch="transparent"
-							name="none"
+							name="none (clear override)"
 							onClick={() => onToken(null)}
 						/>
 					)}
+					{allowNone &&
+						COLOR_KEYWORDS.map((k) => (
+							<MenuRow
+								key={k}
+								active={display === k}
+								swatch={swatchVar(k)}
+								name={k}
+								onClick={() => onToken(k)}
+							/>
+						))}
 					{TOKEN_SECTIONS.map((section) => (
 						<div key={section.header}>
 							<div className="px-2 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-subtext0">

@@ -47,8 +47,9 @@ describe("routes render without runtime errors", () => {
 
 	it("component non-cva (/components/input)", async () => {
 		renderApp("/components/input");
-		// Non-cva primitives now get the same full editor (seeded empty model) as cva ones.
-		await screen.findByText(/Manage variants/i);
+		// Non-cva primitives edit via the slot inspector (no cva "Manage variants"); the "Editing"
+		// picker is present and, for a single-element primitive, offers its one slot.
+		await screen.findByText(/Editing/i);
 		expectNoCriticalLogs();
 	});
 

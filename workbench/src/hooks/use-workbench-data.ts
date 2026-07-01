@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { isDirty, useWorkbench, workbenchStore } from "~/stores/workbench";
+import { dirtySlots, isDirty, useWorkbench, workbenchStore } from "~/stores/workbench";
 import { client } from "~/utils/api";
 import type { CvaModel } from "../../server/lib/cva-codec";
 
@@ -142,4 +142,53 @@ export function useDeleteCva() {
 			qc.invalidateQueries({ queryKey: ["primitives"] });
 		},
 	});
+}
+
+/** Load one component's current per-slot classes (vanilla or promoted custom) into the store. */
+export function useComponentSlots(name: string) {
+	const query = useQuery({
+		queryKey: ["components", name],
+		queryFn: async (): Promise<
+			{ slots: Record<string, string>; custom: boolean } | { error: string }
+		> => {
+			const r = await client.api.components[":name"].$get({ param: { name } });
+			return r.json();
+		},
+	});
+	const data = query.data && "slots" in query.data ? query.data.slots : undefined;
+	useEffect(() => {
+		if (data) workbenchStore.getState().loadSlots(name, data);
+	}, [data, name]);
+	return query;
+}
+
+export function useSlotDirtyCount(): number {
+	return useWorkbench((s) => dirtySlots(s).length);
+}
+
+/**
+ * Save every dirty slot, grouped by component. A PUT promotes the vanilla primitive to a custom (full
+ * source vendored into the registry) and bakes the slot classes in — so what shipped is what you see.
+ */
+export function useSaveSlots() {
+	const qc = useQueryClient();
+	const count = useSlotDirtyCount();
+	const saveSlots = async () => {
+		const s = workbenchStore.getState();
+		const byComp = new Map<string, Record<string, string>>();
+		for (const slot of dirtySlots(s)) {
+			const comp = s.slotOwner[slot];
+			if (!comp) continue;
+			const map = byComp.get(comp) ?? {};
+			map[slot] = s.slots[slot] ?? "";
+			byComp.set(comp, map);
+		}
+		for (const [comp, json] of byComp) {
+			await client.api.components[":name"].$put({ param: { name: comp }, json });
+		}
+		workbenchStore.getState().markSlotsSaved();
+		qc.invalidateQueries({ queryKey: ["components"] });
+		qc.invalidateQueries({ queryKey: ["primitives"] });
+	};
+	return { saveSlots, count };
 }

@@ -11,6 +11,9 @@ export const REGISTRY_JSON = resolve(REGISTRY_ROOT, "registry.json");
 export const UI_DIR = resolve(REGISTRY_ROOT, "registry/components/ui");
 export const CVA_DIR = resolve(UI_DIR, "cva");
 
+// The workbench's vendored vanilla shadcn primitives — the base a component is promoted from.
+export const VENDORED_UI = resolve(WORKBENCH_ROOT, "src/components/ui");
+
 // The workbench's own compiled stylesheet — source of truth for the Tailwind design system.
 export const GLOBALS_CSS = resolve(WORKBENCH_ROOT, "src/styles/globals.css");
 

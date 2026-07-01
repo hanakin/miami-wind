@@ -18,7 +18,7 @@ import {
 	colorUtility,
 	findUtility,
 	parseClasses,
-	readColor,
+	readEffectiveColor,
 	removeRaw,
 	STATES,
 	swatchVar,
@@ -69,7 +69,16 @@ const fontWeightMatch = (u: string) =>
 const cursorMatch = (u: string) => /^cursor-/.test(u);
 const opacityMatch = (u: string) => /^opacity-\d+$/.test(u);
 
-export function Inspector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function Inspector({
+	value,
+	inherited = "",
+	onChange,
+}: {
+	value: string;
+	/** Classes beneath the edited target (e.g. cva base when editing a variant) — for showing inherited colors. */
+	inherited?: string;
+	onChange: (v: string) => void;
+}) {
 	const [state, setState] = useState("");
 	const set = (match: (u: string) => boolean, util: string | null) =>
 		onChange(applyUtility(value, state, match, util));
@@ -91,9 +100,30 @@ export function Inspector({ value, onChange }: { value: string; onChange: (v: st
 				</Select>
 			</Field>
 
-			<ColorRow label="Background" prop="bg" value={value} state={state} onChange={onChange} />
-			<ColorRow label="Text" prop="text" value={value} state={state} onChange={onChange} />
-			<ColorRow label="Border" prop="border" value={value} state={state} onChange={onChange} />
+			<ColorRow
+				label="Background"
+				prop="bg"
+				value={value}
+				inherited={inherited}
+				state={state}
+				onChange={onChange}
+			/>
+			<ColorRow
+				label="Text"
+				prop="text"
+				value={value}
+				inherited={inherited}
+				state={state}
+				onChange={onChange}
+			/>
+			<ColorRow
+				label="Border"
+				prop="border"
+				value={value}
+				inherited={inherited}
+				state={state}
+				onChange={onChange}
+			/>
 
 			<div className="grid grid-cols-2 gap-3">
 				<SelectField
@@ -145,16 +175,18 @@ function ColorRow({
 	label,
 	prop,
 	value,
+	inherited,
 	state,
 	onChange,
 }: {
 	label: string;
 	prop: ColorProp;
 	value: string;
+	inherited: string;
 	state: string;
 	onChange: (v: string) => void;
 }) {
-	const c = readColor(value, state, prop);
+	const c = readEffectiveColor(value, inherited, state, prop);
 	const token = c.token;
 	const set = (util: string | null) => onChange(applyUtility(value, state, colorMatch(prop), util));
 	const swatch = token ? swatchVar(token) : (c.arbitrary ?? "transparent");
@@ -168,7 +200,12 @@ function ColorRow({
 				onToken={(t) => set(t ? colorUtility(prop, t, c.opacity) : null)}
 				allowNone
 			/>
-			{token && (
+			{c.inherited && (token || c.arbitrary) && (
+				<p className="text-[10px] text-subtext0">
+					inherited — pick a color or transparent to override it here
+				</p>
+			)}
+			{token && !c.inherited && (
 				<div className="flex items-center gap-2">
 					<span className="w-12 text-[10px] text-subtext0">opacity</span>
 					<input

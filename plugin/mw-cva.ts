@@ -48,14 +48,22 @@ export function mwCva(options: MwCvaOptions = {}): Plugin {
 			const name = match[1];
 			if (name === cvaDir) return null; // never process files inside the cva dir itself
 
-			// Sibling cva: components/ui/cva/<name>.ts — absent ⇒ fallback to the inline cva.
+			let out = code;
+			let changed = false;
+
+			// Sibling cva: components/ui/cva/<name>.ts — swap the inline cva for the Miami Wind one.
+			// Components with no inline cva are customized by shipping the full source instead (a
+			// registry:ui item under registry/components/ui/<name>.tsx), not by build-time injection.
 			const cvaPath = join(dirname(file), cvaDir, `${name}.ts`);
-			if (!existsSync(cvaPath)) return null;
+			if (existsSync(cvaPath)) {
+				const swapped = swapInlineCva(out, name, cvaDir);
+				if (swapped !== null) {
+					out = swapped;
+					changed = true;
+				}
+			}
 
-			const swapped = swapInlineCva(code, name, cvaDir);
-			if (swapped === null) return null; // no inline cva found ⇒ nothing to swap
-
-			return { code: swapped, map: null };
+			return changed ? { code: out, map: null } : null;
 		},
 	};
 }
@@ -78,7 +86,8 @@ function swapInlineCva(code: string, name: string, cvaDir: string): string | nul
 	for (; i < code.length; i++) {
 		const ch = code[i];
 		if (inString) {
-			if (ch === "\\") i++; // skip escaped char
+			if (ch === "\\")
+				i++; // skip escaped char
 			else if (ch === inString) inString = null;
 			continue;
 		}

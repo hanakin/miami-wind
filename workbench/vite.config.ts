@@ -3,11 +3,15 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { customResolve } from "./plugin/custom-resolve";
 import { liveCva } from "./plugin/live-cva";
+import { sceneLoc } from "./plugin/scene-loc";
 
 export default defineConfig({
 	plugins: [
+		customResolve(),
 		liveCva(),
+		sceneLoc(),
 		tanstackRouter({
 			target: "react",
 			routesDirectory: "./src/app",

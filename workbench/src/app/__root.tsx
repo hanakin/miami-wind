@@ -20,6 +20,7 @@ import {
 	useInitOverrides,
 	usePrimitives,
 	useSaveAll,
+	useSaveSlots,
 } from "~/hooks/use-workbench-data";
 import { themeDirty, themeStore, useTheme } from "~/stores/theme";
 import { useWorkbench, workbenchStore } from "~/stores/workbench";
@@ -44,12 +45,15 @@ function RootLayout() {
 
 	// Live cva: resolve the working models to CSS and repaint a scoped stylesheet on every edit,
 	// so class changes (opacity, colors, radius…) show instantly without Tailwind recompiling.
+	// Slot edits on non-cva components aren't overlaid here — they're written to the custom component
+	// file on Save and repaint via HMR (exact, no overlay/ship drift).
 	useEffect(() => {
 		const style = document.createElement("style");
 		style.id = "live-cva";
 		document.head.appendChild(style);
 		const paint = () => {
-			style.textContent = cssForModels(workbenchStore.getState().models);
+			const s = workbenchStore.getState();
+			style.textContent = cssForModels(s.models);
 		};
 		paint();
 		const unsub = workbenchStore.subscribe(paint);
@@ -78,17 +82,20 @@ function Navbar() {
 	const tokens = useTheme((s) => s.tokens);
 	const saveTheme = useSaveTheme();
 	const { saveAll } = useSaveAll();
-	const total = cvaDirty + (themeIsDirty ? 1 : 0);
+	const { saveSlots, count: slotDirty } = useSaveSlots();
+	const total = cvaDirty + (themeIsDirty ? 1 : 0) + slotDirty;
 	const pending = saveTheme.isPending;
 
 	const onSave = () => {
 		if (themeIsDirty) saveTheme.mutate({ tokens });
 		saveAll();
+		if (slotDirty) saveSlots();
 	};
 	const onReset = () => {
 		themeStore.getState().revert();
 		const ws = workbenchStore.getState();
 		for (const m of Object.values(ws.models)) ws.revert(m.exportName);
+		ws.revertSlots();
 	};
 
 	return (
