@@ -1,0 +1,14 @@
+/* sugar-high token colors, mapped to the Miami Wind palette. Scoped to .sh-code so it only paints
+   code views (the Custom CSS editor + the component source panel). Static — kept out of the
+   generated globals.css so theme saves don't churn it. Relies on --color-* from globals.css. */
+.sh-code {
+	--sh-identifier: var(--color-text);
+	--sh-keyword: var(--color-pink);
+	--sh-string: var(--color-green);
+	--sh-sign: var(--color-subtext0);
+	--sh-property: var(--color-cyan);
+	--sh-comment: var(--color-grey-500);
+	--sh-class: var(--color-yellow);
+	--sh-jsxliterals: var(--color-purple);
+	--sh-entity: var(--color-blue);
+}
