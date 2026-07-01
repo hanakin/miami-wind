@@ -1,13 +1,14 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { previews } from "~/components/previews";
-import { type ExampleEntry, examples } from "~/examples";
-import type { Selection } from "~/utils/editor-selection";
+import { type ExampleEntry, examples, primaryExamples } from "~/examples";
+import { type Selection, selectionVariantProps } from "~/utils/editor-selection";
 
 type Snap = { example: string; html: string };
 
-// The component editor's preview: shadcn's example set on top and — when a slot is selected — every
-// occurrence of that data-slot extracted from those same rendered examples below. The root carries
-// data-preview so the live-cva/slot CSS overlay reaches both sections (snapshots included).
+// The component editor's preview: shadcn's example set on top and — below it — a focused view of the
+// current selection: a selected data-slot extracted from those same rendered examples, OR the primary
+// example re-rendered with a selected variant option applied. The root carries data-preview so the
+// live-cva/slot CSS overlay reaches every section (snapshots included).
 export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) {
 	// Vendored examples when present, else the legacy hand-authored preview (transitional, until this
 	// component's examples are authored). Memoized on name so slot changes don't remount it.
@@ -21,6 +22,10 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 	}, [name]);
 
 	const slot = sel.type === "slot" ? sel.slot : null;
+	// A selected variant option → re-render the primary example with it applied (below). Covers stock,
+	// modified, and newly-added variants alike, since the option comes from the live cva model.
+	const variantSel = sel.type === "cva" && sel.target.kind === "option" ? sel.target : null;
+	const Primary = primaryExamples[name];
 	const topRef = useRef<HTMLDivElement>(null);
 	const [snap, setSnap] = useState<Snap | null>(null);
 
@@ -85,6 +90,17 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 					)}
 				</Section>
 			)}
+
+			{variantSel &&
+				(Primary ? (
+					<Section label={`${variantSel.axis} · ${variantSel.option}`}>
+						<Primary {...selectionVariantProps(sel)} />
+					</Section>
+				) : (
+					<Section label={`${variantSel.axis} · ${variantSel.option}`}>
+						<p className="text-sm text-subtext0">No primary example for {name} yet.</p>
+					</Section>
+				))}
 		</div>
 	);
 }

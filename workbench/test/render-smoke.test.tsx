@@ -6,7 +6,7 @@ import { ExamplePreview } from "~/components/example-preview";
 import { OpenRender, openRenders } from "~/components/open-renders";
 import { type PreviewRender, previews } from "~/components/previews";
 import { TooltipProvider } from "~/components/ui/tooltip";
-import { examples } from "~/examples";
+import { examples, primaryExamples } from "~/examples";
 
 afterEach(cleanup);
 
@@ -98,6 +98,13 @@ describe("examples index", () => {
 			}
 		}
 	});
+
+	// Every component with examples needs a primary so filtering to a variant has something to render.
+	it("every component with examples has a primary for variant rendering", () => {
+		for (const comp of Object.keys(examples)) {
+			expect(typeof primaryExamples[comp]).toBe("function");
+		}
+	});
 });
 
 // Top section renders shadcn's example set; selecting a slot extracts that data-slot from those same
@@ -117,5 +124,20 @@ describe("ExamplePreview", () => {
 		expect(screen.queryByText(/Not present/)).toBeNull();
 		expect(screen.getByText(/^from /)).toBeTruthy();
 		expect(container.querySelectorAll("[data-slot='item-title']").length).toBeGreaterThan(0);
+	});
+
+	// Selecting a variant option re-renders the primary example carrying that variant — the same one
+	// instance shape as the slot view, so it's unambiguous which variant is in view.
+	it("renders a variant version of the primary example when a variant option is selected", () => {
+		const { container } = render(
+			<TooltipProvider>
+				<ExamplePreview
+					name="item"
+					sel={{ type: "cva", target: { kind: "option", axis: "variant", option: "muted" } }}
+				/>
+			</TooltipProvider>,
+		);
+		expect(screen.getByText("variant · muted")).toBeTruthy();
+		expect(container.querySelector("[data-slot='item'][data-variant='muted']")).toBeTruthy();
 	});
 });
