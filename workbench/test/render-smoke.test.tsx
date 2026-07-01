@@ -140,4 +140,21 @@ describe("ExamplePreview", () => {
 		expect(screen.getByText("variant · muted")).toBeTruthy();
 		expect(container.querySelector("[data-slot='item'][data-variant='muted']")).toBeTruthy();
 	});
+
+	// A size variant sets no `variant`, so the primary keeps its outline default — otherwise the
+	// transparent `default` variant would render an invisible box and the padding couldn't be seen.
+	it("renders a size variant on a bordered container so the padding is discernible", () => {
+		const { container } = render(
+			<TooltipProvider>
+				<ExamplePreview
+					name="item"
+					sel={{ type: "cva", target: { kind: "option", axis: "size", option: "sm" } }}
+				/>
+			</TooltipProvider>,
+		);
+		expect(screen.getByText("size · sm")).toBeTruthy();
+		expect(
+			container.querySelector("[data-slot='item'][data-size='sm'][data-variant='outline']"),
+		).toBeTruthy();
+	});
 });

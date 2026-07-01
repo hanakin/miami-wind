@@ -11,11 +11,13 @@ import {
 } from "~/components/ui/item";
 
 // The canonical single Item — the "main example" the editor re-renders with a variant applied when
-// you filter to one. Variant props arrive from the live cva model as plain strings; Item's typed
-// unions reject them, so cast at this one boundary (same as live-cva's loose-config cast).
+// you filter to one. Defaults: the demo's width (not full-bleed) and the outline variant, so a
+// filtered *size* variant (which sets no `variant`) still shows a bordered box — padding is invisible
+// on the transparent `default`. A selected variant option overrides `variant`. Variant props arrive
+// from the live cva model as plain strings; Item's typed unions reject them, so cast at this boundary.
 export function ItemPrimary(props: Record<string, string>) {
 	return (
-		<Item {...(props as ComponentProps<typeof Item>)}>
+		<Item variant="outline" className="max-w-md" {...(props as ComponentProps<typeof Item>)}>
 			<ItemContent>
 				<ItemTitle>Basic Item</ItemTitle>
 				<ItemDescription>A simple item with title and description.</ItemDescription>
