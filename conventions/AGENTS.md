@@ -33,6 +33,9 @@ Source of truth for setup, validation, completion. Prefer package scripts over a
   `dist/` **and** the API on a single port.
 - **Completion gate: `bun run check`** (Biome check + typecheck + tests). A task isn't complete until
   this passes for the changed area.
+- **Commit gate — mandatory.** The moment the completion gate passes, commit. One commit per inherent
+  feature or module — the singular task just finished. Commit often; never batch several tasks into one
+  commit or leave finished work uncommitted.
 - Iterating: `bun run fmt` (format + safe fixes), `bun run lint`, `bun run typecheck`,
   `bun run test` (`test:watch` to iterate).
 - Deps: `bun add <pkg>` / `bun add -d <pkg>`.
