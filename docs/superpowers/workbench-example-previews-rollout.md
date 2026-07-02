@@ -12,7 +12,10 @@ Per component the editor must show, in the right pane:
 2. **On slot filter:** a **single** instance of the selected `data-slot` — the *default* use — extracted
    from those same examples, captioned `from <example>`.
 3. **On variant/size filter:** the component's **primary** example re-rendered with that variant applied
-   (works for stock, modified, and newly-added variants, since the option comes from the live cva model).
+   (stock, modified, or newly-added, since the option comes from the live cva model) — or a
+   `variantExamples` override where a lone primary wouldn't read (e.g. a transparent default → group).
+4. **On a pass-through context filter** (e.g. `link (a)`): the `contextExamples` example that triggers it
+   (an `asChild <a>`), so the context's styling (`[a]:hover`) is visible and editable.
 
 ## Read first (the reference implementation)
 
@@ -20,17 +23,25 @@ Study these before touching anything — the rollout is "do what `item` does":
 - `workbench/src/examples/item/item-demo.tsx` — `ItemDemo` **and** `ItemPrimary` (the canonical single
   instance; note it defaults to `variant="outline"` + `max-w-md`).
 - `workbench/src/examples/item/{item-group,item-header}.tsx`.
-- `workbench/src/examples/index.ts` — the `examples` and `primaryExamples` maps (static, hand-registered).
+- `workbench/src/examples/index.ts` — the four static, hand-registered maps: `examples`,
+  `primaryExamples`, `variantExamples` (per-option example overrides), and `contextExamples`
+  (pass-through contexts like `[a]`).
+- `workbench/src/examples/item/item-link.tsx` — `ItemLinkExample`, the `asChild <a>` example shown for
+  the `[a]` link context.
 - `workbench/src/components/example-preview.tsx` — **generic; never edit per component.** Renders the top
-  set, does single-instance slot extraction, and renders `primaryExamples[name]` with
-  `selectionVariantProps(sel)` on a cva-option selection.
-- `git show 18f0a30 6bc1a98 1bf9df2` — the three item commits.
+  set, single-instance slot extraction, the `variantExamples`-override-or-`primaryExamples` variant
+  render, and `contextExamples` for a selected pass-through context.
+- `git show 18f0a30 6bc1a98 1bf9df2 cfc796b e20fdaf` — the item example + context-editing commits.
+- **Companion plan:** `docs/superpowers/workbench-cva-context-editing.md` covers the editor-engine work
+  (surfacing every cva, editing `[a]` / `[&_svg]` contexts). Read it if a component has multiple cvas or
+  pass-through context styles.
 
 ## Architecture you can rely on (don't rebuild it)
 
-- **Registration is static.** Add entries to `examples` (and `primaryExamples`) in
-  `workbench/src/examples/index.ts`. `ExampleEntry = { name, label, Component }`. **No glob / generated
-  index** — the user rejected that explicitly.
+- **Registration is static.** Add entries to `examples`, `primaryExamples`, and (where they apply)
+  `variantExamples` / `contextExamples` in `workbench/src/examples/index.ts`.
+  `ExampleEntry = { name, label, Component }`. **No glob / generated index** — the user rejected that
+  explicitly.
 - **`ExamplePreview` is already generic** — it auto-renders any registered entry, extracts any slot,
   renders any primary. You do **not** edit it per component.
 - **Variants are already filterable.** The `live-cva` Vite plugin (`workbench/vite.config.ts` →
@@ -89,6 +100,24 @@ slot list instead): `button-group`, `input-group`, `native-select`, `combobox`, 
 6. **Icons:** our `Icon` (iconify `mdi:` or `type="custom"` SVG). Never lucide, never bare `<svg>`.
 7. **Match shadcn** — do not "simplify" content into invented copy. Port the real demo.
 
+## Variant & context examples (the pattern grew — apply per component)
+
+Beyond the top examples + primary, the item pattern now has two override maps in `index.ts`, plus a
+companion editor-engine track:
+
+- **`variantExamples[name]["<axis>:<option>"]`** — a richer example for a variant that doesn't read as a
+  lone card. Item's transparent `default` variant is shown via the **group** example
+  (`variantExamples.item["variant:default"] = ItemGroupExample`) — a borderless item only makes sense in
+  a separated list. Register one whenever an option renders as "nothing" on a lone primary.
+- **`contextExamples[name]["<context>"]`** — the example to render when a **pass-through context** target
+  is selected. Item registers `{ a: ItemLinkExample }` so selecting `link (a)` shows a real `asChild`
+  `<a>`, where `[a]:hover` is visible and editable. Register one for any component whose classes carry
+  `[a]:` (the whole element becomes a link) — **scan the component file, not just the cva.**
+- **Multi-cva / `[&_svg]` sizing** — components with a second cva (item: `itemMediaVariants`; tabs) or
+  icon/image sizing (`[&_svg]`, `[&_img]`) are handled by the engine work in
+  `docs/superpowers/workbench-cva-context-editing.md`. Until that lands, a component's *secondary* cva
+  variants (e.g. item's media `icon`/`image`) won't appear in the dropdown — note it, don't fight it.
+
 ## Recipe A — standard components (non-portal)
 
 Per component:
@@ -132,17 +161,21 @@ is fully green — study `open-renders.tsx` before starting it.
 - **Do not run parallel `bun run check` or parallel commits** — the full test run + git index race. Fan out
   authoring in parallel; integrate + verify + commit **serially**.
 
-**One-time global setup (orchestrator, before the loop):**
-- Relax the invariant in `workbench/test/render-smoke.test.tsx` ("every component with examples has a
-  primary") to require a primary **only for cva components** — non-cva components legitimately have none.
-  `ExamplePreview` already degrades gracefully when a primary is absent.
-- Confirm the biome `src/examples/**` override is present (it is).
+**One-time global setup — already done, just confirm:**
+- The `render-smoke.test.tsx` primary invariant is already relaxed to "every primary is a component"
+  (it iterates `primaryExamples`, not `examples`), so non-cva components need no primary. `ExamplePreview`
+  degrades gracefully when a primary / variant / context example is absent.
+- The biome `src/examples/**` override is present.
+- `separator` is already wired as a second worked example (non-cva, one demo) — a template for trivial
+  components.
 
 **Per-component loop (orchestrator):**
 1. Spawn the sub-agent (template below) with the component's name, slot list, cva axes/options, and demo
    file list. (May fan out several at once.)
 2. Write the returned files under `workbench/src/examples/<name>/`.
-3. Register in `index.ts`: add the `examples[<name>]` entries (+ `primaryExamples[<name>]` if cva).
+3. Register in `index.ts`: `examples[<name>]` entries, plus `primaryExamples[<name>]` (if cva),
+   `variantExamples[<name>]` (options that don't read alone), and `contextExamples[<name>]` (if the
+   component's classes carry `[a]:` / other pass-through contexts).
 4. `cd workbench && bun run check` — fix anything (orchestrator owns global fixes).
 5. **Verify visually** (see below). Fix drift vs shadcn.
 6. Commit to `main`: `feat: shadcn example previews for <name>`.
@@ -172,8 +205,13 @@ is fully green — study `open-renders.tsx` before starting it.
 > defaulting to a **visible variant + `max-w-*`** so a size filter renders a discernible box (see
 > `ItemPrimary`).
 >
-> **Return, do NOT edit `index.ts` or commit:** each file's path + full contents; the proposed
-> `examples["<NAME>"]` array and `primaryExamples["<NAME>"]` line; and a slot→example coverage map.
+> **If any class carries `[a]:`** (scan the whole file, not just the cva), author an `asChild <a>` example
+> (like `ItemLinkExample`) and propose `contextExamples["<NAME>"] = { a: … }`. **If a variant renders as
+> "nothing" on a lone primary** (e.g. a transparent default), propose a `variantExamples["<NAME>"]`
+> override that shows it in context.
+>
+> **Return, do NOT edit `index.ts` or commit:** each file's path + full contents; the proposed `examples`
+> / `primaryExamples` / `variantExamples` / `contextExamples` entries; and a slot→example coverage map.
 
 ## Verification (end-to-end, per component)
 
@@ -187,16 +225,16 @@ is fully green — study `open-renders.tsx` before starting it.
   variant view shows the primary with the variant applied on a **bordered/filled** box.
 - **Done when:** every `data-slot` covered · gate green · screenshots verified · committed to `main`.
 
-## Work-list (57 components; `item` ✅ done)
+## Work-list (57 components; `item` ✅ done — incl. its `[a]` link context; `separator` ✅ done)
 
 **Recipe A — standard (44).** cva components flagged; the rest are slot-only.
 `accordion` · `alert` (cva variant) · `aspect-ratio`* · `avatar` · `badge` (cva variant) · `breadcrumb` ·
 `button` (cva variant+size) · `button-group`† (cva orientation) · `calendar` · `card` · `carousel` ·
 `chart`† · `checkbox` · `collapsible` · `empty` (cva variant) · `field`† (cva orientation) · `form` ·
 `input`* · `input-group`† (cva align) · `input-otp` · `kbd`† · `label`* · `native-select`† ·
-`navigation-menu` · `pagination` · `progress` · `radio-group` · `resizable` · `scroll-area` · `separator`* ·
-`sidebar`† · `skeleton`* · `slider` · `sonner`† · `spinner`*† · `switch` · `table` · `tabs` (cva
-orientation+variant) · `textarea`* · `toggle` (cva variant+size) · `toggle-group`.
+`navigation-menu` · `pagination` · `progress` · `radio-group` · `resizable` · `scroll-area` ·
+`separator`* ✅ · `sidebar`† · `skeleton`* · `slider` · `sonner`† · `spinner`*† · `switch` · `table` ·
+`tabs` (cva orientation+variant) · `textarea`* · `toggle` (cva variant+size) · `toggle-group`.
 `*` = trivial (one minimal example) · `†` = no stock shadcn demo (author faithfully).
 
 **Recipe B — portal/overlay (13, later phase).**
