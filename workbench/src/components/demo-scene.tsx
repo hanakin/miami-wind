@@ -61,7 +61,9 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 	const deriveSelector = opt
 		? `[data-slot="${name}"][data-${opt.axis}="${opt.option}"]`
 		: ctx
-			? `a[data-slot="${name}"]`
+			? ctx.context === "a"
+				? `a[data-slot="${name}"]`
+				: `[data-variant="${ctx.context}"]`
 			: null;
 	// Fallback for a variant that lives on a sub-slot, not the root — e.g. item-media's icon/image
 	// (data-variant on [data-slot=item-media]). Tried only if the root-scoped match finds nothing.
@@ -152,9 +154,9 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 function renderFocus(focus: Focus, name: string, entries: Demo[]): ReactNode {
 	if (focus.kind === "slot") {
 		return (
-			<div className="flex flex-col items-start gap-1.5">
+			<div className="flex w-72 max-w-full flex-col items-start gap-1.5">
 				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: cloned from our own rendered demos above. */}
-				<div dangerouslySetInnerHTML={{ __html: focus.html }} />
+				<div className="w-full" dangerouslySetInnerHTML={{ __html: focus.html }} />
 				<span className="font-mono text-[10px] text-subtext0">from {focus.from}</span>
 			</div>
 		);

@@ -5,7 +5,7 @@ import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "~/componen
 export function ItemLink() {
 	return (
 		<div className="flex w-full max-w-md flex-col gap-6">
-			<Item variant="outline" size="sm" asChild>
+			<Item variant="outline" asChild>
 				<a href="#">
 					<ItemMedia>
 						<Icon icon="mdi:check-decagram" className="size-5" />
