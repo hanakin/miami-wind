@@ -16,7 +16,9 @@ export interface Token {
 	utility: string;
 }
 
-const PREFIX_RE = /^((?:[a-zA-Z0-9-]+:|\[[^\]]*\]:)+)/;
+// State/context prefixes: plain (`hover:`) or arbitrary-selector (`[a]:`, `[&_svg]:`), one level of
+// bracket nesting allowed so `[&_svg:not([class*='size-'])]:` tokenizes as a single prefix.
+const PREFIX_RE = /^((?:[a-zA-Z0-9-]+:|\[(?:[^[\]]|\[[^\]]*\])*\]:)+)/;
 
 export function splitClass(raw: string): Token {
 	const m = raw.match(PREFIX_RE);
@@ -224,4 +226,11 @@ export function readEffectiveColor(
 
 export function arbitraryColor(prop: ColorProp, value: string): string {
 	return `${prop}-[${value}]`;
+}
+
+// --- Size -------------------------------------------------------------------
+// A width+height utility (`size-4`, `size-full`) the Size control edits and cva-controls uses to spot
+// `[&_svg]`/`[&_img]` sizing contexts. w-/h- resolve in live-css too but aren't offered by the control.
+export function sizeMatch(u: string): boolean {
+	return /^size-(\d+(?:\.\d+)?|full)$/.test(u);
 }

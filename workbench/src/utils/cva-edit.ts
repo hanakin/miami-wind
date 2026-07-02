@@ -1,26 +1,47 @@
 import type { CvaModel } from "../../server/lib/cva-codec";
 
 // What the inspector is currently editing: the shared base classes, one option of one axis, or a
-// pass-through context (e.g. `a` — the `[a]:` classes that only apply when the item is an <a>). A
-// context target edits the base string too, but the inspector scopes it through the `[<context>]:` lens.
-// `symbol` names the owning cva (its export name) — a component can have several (item has itemVariants
-// and itemMediaVariants), so the target must say which one it edits.
+// pass-through context — the `[a]:` classes that only apply when the item is an <a>, or the `[&_svg]:` /
+// `[&_img]:` classes that size a descendant. The inspector scopes a context through its exact source
+// `prefix` (`[a]:`, `[&_svg:not([class*='size-'])]:`). `context` is a short display/example key. A
+// context usually lives in the base, but a size context can live in a variant option (the icon media
+// variant) — `axis`/`option` say where so it reads/writes that option instead of base. `symbol` names
+// the owning cva (its export name) — a component can have several (item has itemVariants and
+// itemMediaVariants), so the target must say which one it edits.
 export type Target =
 	| { kind: "base"; symbol?: string }
 	| { kind: "option"; axis: string; option: string; symbol?: string }
-	| { kind: "context"; context: string; symbol?: string };
+	| {
+			kind: "context";
+			context: string;
+			prefix: string;
+			symbol?: string;
+			axis?: string;
+			option?: string;
+	  };
+
+// A context can point at a variant option (a size context living in the icon media variant); else it,
+// like base, edits the base string.
+function optionOf(target: Target): { axis: string; option: string } | null {
+	if (target.kind === "option") return { axis: target.axis, option: target.option };
+	if (target.kind === "context" && target.axis && target.option)
+		return { axis: target.axis, option: target.option };
+	return null;
+}
 
 export function targetClass(model: CvaModel, target: Target): string {
-	if (target.kind === "option") return model.variants[target.axis]?.[target.option] ?? "";
-	return model.base; // base and context both live in the base string
+	const opt = optionOf(target);
+	if (opt) return model.variants[opt.axis]?.[opt.option] ?? "";
+	return model.base; // base and base-level contexts both live in the base string
 }
 
 export function setTargetClass(model: CvaModel, target: Target, value: string): CvaModel {
-	if (target.kind === "option") {
-		const axis = model.variants[target.axis] ?? {};
+	const opt = optionOf(target);
+	if (opt) {
+		const axis = model.variants[opt.axis] ?? {};
 		return {
 			...model,
-			variants: { ...model.variants, [target.axis]: { ...axis, [target.option]: value } },
+			variants: { ...model.variants, [opt.axis]: { ...axis, [opt.option]: value } },
 		};
 	}
 	return { ...model, base: value };

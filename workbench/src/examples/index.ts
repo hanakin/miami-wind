@@ -40,9 +40,10 @@ export const variantExamples: Record<string, Record<string, ComponentType>> = {
 	},
 };
 
-// Per-component example for a pass-through context (keyed by the context, e.g. `a`). Rendered when
-// that context target is selected, so the styling it carries is actually visible — e.g. the item as
-// an <a> link, where its `[a]:hover` background can be seen and edited.
+// Per-component example for a pass-through context (keyed by the context, e.g. `a`, `icon`, `image`).
+// Rendered when that context target is selected, so the styling it carries is visible and editable —
+// the item as an <a> link (`[a]:hover` background), or an item with icon/image media so the
+// `[&_svg]`/`[&_img]` size contexts can be seen resizing live.
 export const contextExamples: Record<string, Record<string, ComponentType>> = {
-	item: { a: ItemLinkExample },
+	item: { a: ItemLinkExample, icon: ItemMediaIconExample, image: ItemMediaImageExample },
 };

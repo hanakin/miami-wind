@@ -67,8 +67,42 @@ describe("live-css link context", () => {
 		);
 	});
 
-	it("still skips contexts it doesn't handle ([&_svg]:)", () => {
-		expect(cssForModel({ ...linkModel, base: "[&_svg]:size-4" })).toBe("");
+	it("resolves an [&_svg]: size context to a descendant rule (no longer skipped)", () => {
+		const css = cssForModel({ ...linkModel, base: "[&_svg]:size-4" });
+		expect(css).toContain('[data-preview] [data-slot="item"] svg { width: 1rem; height: 1rem; }');
+	});
+});
+
+// A media cva's icon/image variants size bare child svgs/imgs via `[&_svg:not([class*='size-'])]:size-4`
+// and `[&_img]:size-full`. The engine scopes each to its data-variant and renders it as a descendant
+// rule, so the icon/image size is live-editable — the payoff of the widened tokenizer + declFor.
+describe("live-css svg/img size contexts", () => {
+	const media: CvaModel = {
+		name: "item",
+		localName: "itemMedia",
+		exportName: "itemMediaVariants",
+		base: "",
+		variants: {
+			variant: {
+				icon: "[&_svg:not([class*='size-'])]:size-4",
+				image: "[&_img]:size-full",
+			},
+		},
+		defaultVariants: {},
+		compoundVariants: [],
+	};
+	const css = cssForModel(media);
+
+	it("scopes an icon-variant svg size to its data-variant + a descendant selector", () => {
+		expect(css).toContain(
+			`[data-preview] [data-slot="item-media"][data-variant="icon"] svg:not([class*='size-'])`,
+		);
+		expect(css).toContain("width: 1rem; height: 1rem;");
+	});
+
+	it("resolves an image-variant [&_img]:size-full to 100%", () => {
+		expect(css).toContain(`[data-slot="item-media"][data-variant="image"] img`);
+		expect(css).toContain("width: 100%; height: 100%;");
 	});
 });
 

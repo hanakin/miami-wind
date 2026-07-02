@@ -23,6 +23,15 @@ describe("tw-tokens", () => {
 		expect(tokens[1]?.utility).toBe("bg-pink");
 	});
 
+	it("tokenizes an [&_svg]: context prefix with a nested bracket", () => {
+		const [t] = parseClasses("[&_svg:not([class*='size-'])]:size-4");
+		expect(t).toEqual({
+			raw: "[&_svg:not([class*='size-'])]:size-4",
+			state: "[&_svg:not([class*='size-'])]:",
+			utility: "size-4",
+		});
+	});
+
 	it("parses and serializes color utilities with opacity", () => {
 		expect(parseColor("bg-primary", "bg")).toEqual({ token: "primary", opacity: 100 });
 		expect(parseColor("bg-pink/50", "bg")).toEqual({ token: "pink", opacity: 50 });

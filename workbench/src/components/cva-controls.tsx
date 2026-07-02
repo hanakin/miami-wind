@@ -22,7 +22,36 @@ import {
 } from "~/utils/cva-edit";
 import type { Selection } from "~/utils/editor-selection";
 import { slotForCva } from "~/utils/live-css";
+import { parseClasses, sizeMatch } from "~/utils/tw-tokens";
 import type { CvaModel } from "../../server/lib/cva-codec";
+
+// Editable pass-through contexts baked into a cva's classes: the `[a]` link (in base) and any `[&_svg]`
+// / `[&_img]` size selector (which may live in a variant option — e.g. the icon media variant). Each
+// becomes its own target scoped to the exact source prefix, so the inspector's Size control edits the
+// real class (`applyUtility` matches tokens on that prefix). Only size-bearing svg/img contexts are
+// surfaced, so a base `[&_svg]:pointer-events-none` isn't mistaken for a size knob.
+function cvaContexts(m: CvaModel) {
+	const out: { context: string; label: string; prefix: string; axis?: string; option?: string }[] =
+		[];
+	if (/\[a\]:/.test(m.base)) out.push({ context: "a", label: "link (a)", prefix: "[a]:" });
+	const scan = (cls: string, axis?: string, option?: string) => {
+		for (const t of parseClasses(cls)) {
+			const kind = t.state.startsWith("[&_svg")
+				? "svg"
+				: t.state.startsWith("[&_img")
+					? "img"
+					: null;
+			if (!kind || !sizeMatch(t.utility)) continue;
+			const context = option ?? kind;
+			if (out.some((c) => c.context === context)) continue; // one size context per option
+			out.push({ context, label: `${option ?? kind} size`, prefix: t.state, axis, option });
+		}
+	};
+	scan(m.base);
+	for (const [axis, opts] of Object.entries(m.variants))
+		for (const [option, cls] of Object.entries(opts)) scan(cls, axis, option);
+	return out;
+}
 
 export function CvaControls({
 	name,
@@ -82,19 +111,25 @@ export function CvaControls({
 	// option — each tagged with the cva's export symbol so it edits the right file. Flat for a single
 	// cva; grouped and labeled by slot (item, item-media, …) when a component has several.
 	const cvaGroups = cvas.map((m) => {
-		const contexts = /\[a\]:/.test(m.base) ? ["a"] : [];
 		const options = [
 			{
 				value: `cva:${m.exportName}:base`,
 				label: "Base",
 				sel: { type: "cva", target: { kind: "base", symbol: m.exportName } } as Selection,
 			},
-			...contexts.map((context) => ({
-				value: `cva:${m.exportName}:ctx:${context}`,
-				label: `link (${context})`,
+			...cvaContexts(m).map((c) => ({
+				value: `cva:${m.exportName}:ctx:${c.context}`,
+				label: c.label,
 				sel: {
 					type: "cva",
-					target: { kind: "context", context, symbol: m.exportName },
+					target: {
+						kind: "context",
+						context: c.context,
+						prefix: c.prefix,
+						symbol: m.exportName,
+						axis: c.axis,
+						option: c.option,
+					},
 				} as Selection,
 			})),
 			...Object.entries(m.variants).flatMap(([axis, opts]) =>
@@ -194,9 +229,7 @@ export function CvaControls({
 				value={value}
 				inherited={inherited}
 				onChange={onChange}
-				context={
-					sel.type === "cva" && sel.target.kind === "context" ? `[${sel.target.context}]:` : ""
-				}
+				context={sel.type === "cva" && sel.target.kind === "context" ? sel.target.prefix : ""}
 			/>
 
 			{hasCva && model && (

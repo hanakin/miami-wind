@@ -9,9 +9,9 @@ import { parseClasses, parseColor, swatchVar } from "./tw-tokens";
 // Scoped to [data-preview] so it only restyles the canvas, never the workbench's own chrome.
 // Anything outside this bounded set stays Tailwind's job and compiles for real on Save.
 //
-// ponytail: covers exactly the Inspector controls (color/opacity/radius/border/font/cursor) +
-// base and the four interaction states. dark:/aria:/arbitrary-selector variants are passed over,
-// not resolved — add them here if the inspector ever edits them.
+// ponytail: covers the Inspector controls (color/opacity/radius/border/font/cursor/size) + base, the
+// four interaction states, and the `[a]` / `[&_svg]` / `[&_img]` pass-through contexts. dark:/aria:/
+// data-[state]: variants are still passed over, not resolved — add them here if the inspector edits them.
 
 const SCOPE = "[data-preview] ";
 
@@ -23,19 +23,39 @@ const STATE_PSEUDO: Record<string, string> = {
 	"disabled:": ":disabled",
 };
 
-// A token's state prefix → the element it targets + its pseudo. Plain states target the slot itself
-// (`el: ""`); the `[a]:` link context targets the slot only when it's an <a> (asChild), e.g.
-// `[a]:hover:` → `a[data-slot=…]:hover`. Anything else (`[&_svg]:`, `data-[state]:`, dark:, aria:)
-// stays Tailwind's job — returns null so it's skipped.
-function resolveState(state: string): { el: string; pseudo: string } | null {
-	let el = "";
+// Peel a leading arbitrary-selector context (`[a]:`, `[&_svg:not([class*='size-'])]:`) off a state
+// prefix, bracket-nesting aware. Returns the inner content + the remaining plain-state chain, or null
+// if the leading `[…]` isn't a closed, colon-terminated context.
+function splitContext(state: string): { content: string; rest: string } | null {
+	let depth = 0;
+	for (let i = 0; i < state.length; i++) {
+		if (state[i] === "[") depth++;
+		else if (state[i] === "]" && --depth === 0) {
+			return state[i + 1] === ":" ? { content: state.slice(1, i), rest: state.slice(i + 2) } : null;
+		}
+	}
+	return null;
+}
+
+// A token's state prefix → the full selector (after SCOPE) it targets, or null if the engine doesn't
+// handle it. Plain states target the slot itself (`[data-slot=…]:hover`). `[a]:` targets the slot only
+// when it's an <a> (asChild): `a[data-slot=…]`. A `[&…]:` context becomes a descendant of the slot,
+// with `&` → the slot and `_` → a space: `[&_svg:not(…)]:` → `[data-slot=…] svg:not(…)`. Anything else
+// (`data-[state]:`, dark:, aria:) stays Tailwind's job — returns null so it's skipped.
+function resolveSelector(state: string, slotSel: string): string | null {
+	let target = slotSel;
 	let rest = state;
-	if (rest.startsWith("[a]:")) {
-		el = "a";
-		rest = rest.slice("[a]:".length);
+	if (rest.startsWith("[")) {
+		const ctx = splitContext(rest);
+		if (!ctx) return null;
+		rest = ctx.rest;
+		if (ctx.content === "a") target = `a${slotSel}`;
+		else if (ctx.content.startsWith("&"))
+			target = `${slotSel}${ctx.content.slice(1).replace(/_/g, " ")}`;
+		else return null;
 	}
 	const pseudo = STATE_PSEUDO[rest];
-	return pseudo === undefined ? null : { el, pseudo };
+	return pseudo === undefined ? null : `${target}${pseudo}`;
 }
 
 const RADIUS: Record<string, string> = {
@@ -95,6 +115,15 @@ function declFor(u: string): string | null {
 	const op = u.match(/^opacity-(\d+)$/);
 	if (op) return `opacity: ${Number(op[1]) / 100};`;
 	if (u.startsWith("cursor-")) return `cursor: ${u.slice("cursor-".length)};`;
+	// size/width/height — the icon (`size-4`) and image (`size-full`) contexts. N is Tailwind's
+	// 0.25rem scale; `full` → 100%.
+	const size = u.match(/^(size|w|h)-(\d+(?:\.\d+)?|full)$/);
+	if (size) {
+		const val = size[2] === "full" ? "100%" : `${Number(size[2]) * 0.25}rem`;
+		if (size[1] === "w") return `width: ${val};`;
+		if (size[1] === "h") return `height: ${val};`;
+		return `width: ${val}; height: ${val};`;
+	}
 	return null;
 }
 
@@ -109,20 +138,19 @@ function declsFor(utils: string[]): string {
 
 /** Rules for one target (base classes or one variant option), one per interaction state present. */
 function rulesForTarget(slot: string, attr: string, classString: string): string[] {
+	const slotSel = `[data-slot="${slot}"]${attr}`;
 	const byState = new Map<string, string[]>();
 	for (const t of parseClasses(classString)) {
-		if (!resolveState(t.state)) continue; // skip dark:/aria:/[&_svg]: — Tailwind's job
+		if (!resolveSelector(t.state, slotSel)) continue; // skip dark:/aria:/data-[state]: — Tailwind's job
 		const list = byState.get(t.state) ?? [];
 		list.push(t.utility);
 		byState.set(t.state, list);
 	}
 	const out: string[] = [];
 	for (const [state, utils] of byState) {
-		const r = resolveState(state);
+		const sel = resolveSelector(state, slotSel);
 		const decls = declsFor(utils);
-		if (r && decls) {
-			out.push(`${SCOPE}${r.el}[data-slot="${slot}"]${attr}${r.pseudo} { ${decls} }`);
-		}
+		if (sel && decls) out.push(`${SCOPE}${sel} { ${decls} }`);
 	}
 	return out;
 }
