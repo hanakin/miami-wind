@@ -55,19 +55,25 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 	const ctx = sel.type === "cva" && sel.target.kind === "context" ? sel.target : null;
 	const filterKey =
 		slot ?? (opt ? `${opt.axis}-${opt.option}` : ctx ? `context-${ctx.context}` : null);
-	// The selector that identifies the demo representing a variant/size/context (null for a slot or base).
-	// Scope to the component's root slot ([data-slot=name]) so a variant match is the root's own — not a
-	// sub-part that happens to carry the same data-attr (e.g. ItemMedia also has data-variant="default").
-	const deriveSelector = opt
-		? `[data-slot="${name}"][data-${opt.axis}="${opt.option}"]`
-		: ctx
-			? ctx.context === "a"
-				? `a[data-slot="${name}"]`
-				: `[data-variant="${ctx.context}"]`
+	// A slot OR a size option shows the SINGLE matching instance (one item at that size), not the whole
+	// demo — so size·sm shows only the small item, size·xs only the xs item.
+	const extractSelector = slot
+		? `[data-slot="${slot}"]`
+		: opt?.axis === "size"
+			? `[data-slot="${name}"][data-size="${opt.option}"]`
 			: null;
-	// Fallback for a variant that lives on a sub-slot, not the root — e.g. item-media's icon/image
-	// (data-variant on [data-slot=item-media]). Tried only if the root-scoped match finds nothing.
-	const deriveFallback = opt ? `[data-${opt.axis}="${opt.option}"]` : null;
+	// A variant/context shows the whole demo that represents it. Root-scoped so a variant match is the
+	// root's own (not a sub-part with the same data-attr); the fallback catches sub-slot variants
+	// (item-media icon/image). A context routes to its selector: `a` → the link, else the media variant.
+	const deriveSelector =
+		opt && opt.axis !== "size"
+			? `[data-slot="${name}"][data-${opt.axis}="${opt.option}"]`
+			: ctx
+				? ctx.context === "a"
+					? `a[data-slot="${name}"]`
+					: `[data-variant="${ctx.context}"]`
+				: null;
+	const deriveFallback = opt && opt.axis !== "size" ? `[data-${opt.axis}="${opt.option}"]` : null;
 
 	const topRef = useRef<HTMLDivElement>(null);
 	const [focus, setFocus] = useState<Focus>({ kind: "none" });
@@ -94,10 +100,10 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 		const derive = () => {
 			if (!alive) return;
 			const sections = [...root.querySelectorAll<HTMLElement>("[data-demo]")];
-			if (slot) {
-				// The default use: the first occurrence of the slot across the demos — one instance only.
+			if (extractSelector) {
+				// One instance only — the default use of the slot, or the single item at that size.
 				for (const s of sections) {
-					const el = s.querySelector<HTMLElement>(`[data-slot="${slot}"]`);
+					const el = s.querySelector<HTMLElement>(extractSelector);
 					if (el) {
 						setFocus({ kind: "slot", html: el.outerHTML, from: s.dataset.demo ?? "" });
 						return;
@@ -126,7 +132,7 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 			alive = false;
 			clearTimeout(t);
 		};
-	}, [name, slot, filterKey, deriveSelector, deriveFallback]);
+	}, [name, extractSelector, filterKey, deriveSelector, deriveFallback]);
 
 	return (
 		<div data-preview className="flex flex-col gap-8 p-6">

@@ -7,8 +7,8 @@ export function ItemLink() {
 		<div className="flex w-full max-w-md flex-col gap-6">
 			<Item variant="outline" asChild>
 				<a href="#">
-					<ItemMedia>
-						<Icon icon="mdi:check-decagram" className="size-5" />
+					<ItemMedia variant="icon">
+						<Icon icon="mdi:check-decagram" />
 					</ItemMedia>
 					<ItemContent>
 						<ItemTitle>Your profile has been verified.</ItemTitle>
