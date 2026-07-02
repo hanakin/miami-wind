@@ -2,8 +2,6 @@ import type { ComponentType } from "react";
 import { ItemDemo, ItemPrimary } from "./item/item-demo";
 import { ItemGroupExample } from "./item/item-group";
 import { ItemHeaderDemo } from "./item/item-header";
-import { ItemLinkExample } from "./item/item-link";
-import { ItemMediaIconExample, ItemMediaImageExample } from "./item/item-media";
 import { SeparatorDemo } from "./separator/separator-demo";
 
 export type ExampleEntry = { name: string; label: string; Component: ComponentType };
@@ -28,26 +26,24 @@ export const primaryExamples: Record<string, ComponentType<Record<string, string
 };
 
 // Per-variant example override, keyed by `symbol:axis:option` (symbol = the owning cva's export name,
-// since a component can have several). Use when a variant doesn't read as a lone primary — item's root
-// `default` is transparent (show it in a group), and the media cva's icon/image variants live on
-// <ItemMedia>, not the root, so they need an example that puts the variant there. Rendered as-is; the
-// example itself uses the variant. Unmapped variants fall back to the root primary (see example-preview).
+// since a component can have several). The filter view PULLS FROM the finalized `examples` above — never
+// new authored content: the root primary can't show a media-cva variant (it has no <ItemMedia>), so each
+// media variant reuses the example that already exercises it. icon → ItemDemo (its badge icon in media);
+// image / default → ItemGroupExample (its avatars in media). item's transparent root `default` also uses
+// the group. Unmapped variants fall back to the root primary (see example-preview).
 export const variantExamples: Record<string, Record<string, ComponentType>> = {
 	item: {
 		"itemVariants:variant:default": ItemGroupExample,
-		// The media cva's variants live on <ItemMedia>, which the root primary lacks — so EVERY media
-		// variant needs an example, not just the ones that "read as nothing". default = item-group's
-		// avatars (default media), icon = item-icon, image = item-image (all shadcn demos).
 		"itemMediaVariants:variant:default": ItemGroupExample,
-		"itemMediaVariants:variant:icon": ItemMediaIconExample,
-		"itemMediaVariants:variant:image": ItemMediaImageExample,
+		"itemMediaVariants:variant:icon": ItemDemo,
+		"itemMediaVariants:variant:image": ItemGroupExample,
 	},
 };
 
 // Per-component example for a pass-through context (keyed by the context, e.g. `a`, `icon`, `image`).
-// Rendered when that context target is selected, so the styling it carries is visible and editable —
-// the item as an <a> link (`[a]:hover` background), or an item with icon/image media so the
-// `[&_svg]`/`[&_img]` size contexts can be seen resizing live.
+// Rendered when that context target is selected — again PULLED FROM the finalized `examples`: the `[a]`
+// link and the icon media both live in ItemDemo (its asChild <a> row carries a badge icon in media);
+// image media lives in ItemGroupExample (avatars).
 export const contextExamples: Record<string, Record<string, ComponentType>> = {
-	item: { a: ItemLinkExample, icon: ItemMediaIconExample, image: ItemMediaImageExample },
+	item: { a: ItemDemo, icon: ItemDemo, image: ItemGroupExample },
 };
