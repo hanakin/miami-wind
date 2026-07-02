@@ -73,15 +73,20 @@ export function Inspector({
 	value,
 	inherited = "",
 	onChange,
+	context = "",
 }: {
 	value: string;
 	/** Classes beneath the edited target (e.g. cva base when editing a variant) — for showing inherited colors. */
 	inherited?: string;
 	onChange: (v: string) => void;
+	/** A pass-through selector prefix (e.g. `[a]:`) so every control edits that context's utilities. */
+	context?: string;
 }) {
 	const [state, setState] = useState("");
+	// Everything the controls read/write is scoped to context + interaction state, e.g. `[a]:hover:`.
+	const fullState = context + state;
 	const set = (match: (u: string) => boolean, util: string | null) =>
-		onChange(applyUtility(value, state, match, util));
+		onChange(applyUtility(value, fullState, match, util));
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -105,7 +110,7 @@ export function Inspector({
 				prop="bg"
 				value={value}
 				inherited={inherited}
-				state={state}
+				state={fullState}
 				onChange={onChange}
 			/>
 			<ColorRow
@@ -113,7 +118,7 @@ export function Inspector({
 				prop="text"
 				value={value}
 				inherited={inherited}
-				state={state}
+				state={fullState}
 				onChange={onChange}
 			/>
 			<ColorRow
@@ -121,20 +126,20 @@ export function Inspector({
 				prop="border"
 				value={value}
 				inherited={inherited}
-				state={state}
+				state={fullState}
 				onChange={onChange}
 			/>
 
 			<div className="grid grid-cols-2 gap-3">
 				<SelectField
 					label="Border width"
-					value={findUtility(value, state, borderWMatch)}
+					value={findUtility(value, fullState, borderWMatch)}
 					options={BORDER_W}
 					onSelect={(u) => set(borderWMatch, u)}
 				/>
 				<SelectField
 					label="Radius"
-					value={findUtility(value, state, radiusMatch)}
+					value={findUtility(value, fullState, radiusMatch)}
 					options={RADIUS}
 					onSelect={(u) => set(radiusMatch, u)}
 				/>
@@ -144,28 +149,28 @@ export function Inspector({
 				<div className="grid grid-cols-2 gap-3">
 					<SelectField
 						label="Font size"
-						value={findUtility(value, state, fontSizeMatch)}
+						value={findUtility(value, fullState, fontSizeMatch)}
 						options={FONT_SIZE}
 						onSelect={(u) => set(fontSizeMatch, u)}
 					/>
 					<SelectField
 						label="Font weight"
-						value={findUtility(value, state, fontWeightMatch)}
+						value={findUtility(value, fullState, fontWeightMatch)}
 						options={FONT_WEIGHT}
 						onSelect={(u) => set(fontWeightMatch, u)}
 					/>
 				</div>
 				<SelectField
 					label="Cursor"
-					value={findUtility(value, state, cursorMatch)}
+					value={findUtility(value, fullState, cursorMatch)}
 					options={CURSOR}
 					onSelect={(u) => set(cursorMatch, u)}
 				/>
-				<OpacityField value={value} state={state} onChange={onChange} />
+				<OpacityField value={value} state={fullState} onChange={onChange} />
 			</Disclosure>
 
 			<Disclosure label="Raw classes">
-				<RawClasses value={value} state={state} onChange={onChange} />
+				<RawClasses value={value} state={fullState} onChange={onChange} />
 			</Disclosure>
 		</div>
 	);

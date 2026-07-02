@@ -23,6 +23,21 @@ const STATE_PSEUDO: Record<string, string> = {
 	"disabled:": ":disabled",
 };
 
+// A token's state prefix → the element it targets + its pseudo. Plain states target the slot itself
+// (`el: ""`); the `[a]:` link context targets the slot only when it's an <a> (asChild), e.g.
+// `[a]:hover:` → `a[data-slot=…]:hover`. Anything else (`[&_svg]:`, `data-[state]:`, dark:, aria:)
+// stays Tailwind's job — returns null so it's skipped.
+function resolveState(state: string): { el: string; pseudo: string } | null {
+	let el = "";
+	let rest = state;
+	if (rest.startsWith("[a]:")) {
+		el = "a";
+		rest = rest.slice("[a]:".length);
+	}
+	const pseudo = STATE_PSEUDO[rest];
+	return pseudo === undefined ? null : { el, pseudo };
+}
+
 const RADIUS: Record<string, string> = {
 	"rounded-none": "0",
 	rounded: "var(--radius-md)",
@@ -96,15 +111,18 @@ function declsFor(utils: string[]): string {
 function rulesForTarget(slot: string, attr: string, classString: string): string[] {
 	const byState = new Map<string, string[]>();
 	for (const t of parseClasses(classString)) {
-		if (!(t.state in STATE_PSEUDO)) continue; // skip dark:/aria:/[&_svg]: — Tailwind's job
+		if (!resolveState(t.state)) continue; // skip dark:/aria:/[&_svg]: — Tailwind's job
 		const list = byState.get(t.state) ?? [];
 		list.push(t.utility);
 		byState.set(t.state, list);
 	}
 	const out: string[] = [];
 	for (const [state, utils] of byState) {
+		const r = resolveState(state);
 		const decls = declsFor(utils);
-		if (decls) out.push(`${SCOPE}[data-slot="${slot}"]${attr}${STATE_PSEUDO[state]} { ${decls} }`);
+		if (r && decls) {
+			out.push(`${SCOPE}${r.el}[data-slot="${slot}"]${attr}${r.pseudo} { ${decls} }`);
+		}
 	}
 	return out;
 }

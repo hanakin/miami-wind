@@ -45,3 +45,29 @@ describe("live-css resolver", () => {
 		expect(css).not.toContain("px-4");
 	});
 });
+
+// The `[a]:` pass-through context (item asChild <a>) resolves to an anchor-scoped rule, so its hover
+// becomes editable — while other arbitrary-selector contexts stay Tailwind's job.
+describe("live-css link context", () => {
+	const linkModel: CvaModel = {
+		name: "item",
+		localName: "item",
+		exportName: "itemVariants",
+		base: "rounded-md [a]:transition-colors [a]:hover:bg-accent/50",
+		variants: {},
+		defaultVariants: {},
+		compoundVariants: [],
+	};
+
+	it("emits [a]:hover as an anchor-scoped rule", () => {
+		const css = cssForModel(linkModel);
+		expect(css).toContain('[data-preview] a[data-slot="item"]:hover {');
+		expect(css).toContain(
+			"color-mix(in oklab, var(--color-accent, var(--accent)) 50%, transparent)",
+		);
+	});
+
+	it("still skips contexts it doesn't handle ([&_svg]:)", () => {
+		expect(cssForModel({ ...linkModel, base: "[&_svg]:size-4" })).toBe("");
+	});
+});

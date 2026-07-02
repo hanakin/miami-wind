@@ -69,6 +69,9 @@ export function CvaControls({
 	const symbol = model.exportName;
 	const apply = (m: CvaModel) => workbenchStore.getState().setModel(symbol, m);
 
+	// Pass-through contexts baked into the base as `[a]:…` (only apply when the item is an <a>, via
+	// asChild). Surface each as its own editable target so the link's styling isn't stranded in Base.
+	const contexts = /\[a\]:/.test(model.base) ? ["a"] : [];
 	const cvaOptions = hasCva
 		? [
 				{
@@ -76,6 +79,11 @@ export function CvaControls({
 					label: "Base",
 					sel: { type: "cva", target: { kind: "base" } } as Selection,
 				},
+				...contexts.map((context) => ({
+					value: `cva:context:${context}`,
+					label: `link (${context})`,
+					sel: { type: "cva", target: { kind: "context", context } } as Selection,
+				})),
 				...Object.entries(model.variants).flatMap(([axis, opts]) =>
 					Object.keys(opts).map((option) => ({
 						value: `cva:${axis}:${option}`,
@@ -97,7 +105,9 @@ export function CvaControls({
 			? `slot:${sel.slot}`
 			: sel.target.kind === "base"
 				? "cva:base"
-				: `cva:${sel.target.axis}:${sel.target.option}`;
+				: sel.target.kind === "context"
+					? `cva:context:${sel.target.context}`
+					: `cva:${sel.target.axis}:${sel.target.option}`;
 
 	const value = sel.type === "slot" ? (slotBase ?? "") : targetClass(model, sel.target);
 	const onChange =
@@ -146,7 +156,14 @@ export function CvaControls({
 				</Select>
 			</div>
 
-			<Inspector value={value} inherited={inherited} onChange={onChange} />
+			<Inspector
+				value={value}
+				inherited={inherited}
+				onChange={onChange}
+				context={
+					sel.type === "cva" && sel.target.kind === "context" ? `[${sel.target.context}]:` : ""
+				}
+			/>
 
 			{hasCva && (
 				<details className="border-t border-border pt-3">

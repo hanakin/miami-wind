@@ -1,6 +1,12 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { previews } from "~/components/previews";
-import { type ExampleEntry, examples, primaryExamples } from "~/examples";
+import {
+	contextExamples,
+	type ExampleEntry,
+	examples,
+	primaryExamples,
+	variantExamples,
+} from "~/examples";
 import { type Selection, selectionVariantProps } from "~/utils/editor-selection";
 
 type Snap = { example: string; html: string };
@@ -26,6 +32,15 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 	// modified, and newly-added variants alike, since the option comes from the live cva model.
 	const variantSel = sel.type === "cva" && sel.target.kind === "option" ? sel.target : null;
 	const Primary = primaryExamples[name];
+	// Some variants don't read as a lone card — e.g. item's `default` is fully transparent. When a
+	// richer example is mapped for the exact option, show that instead (it uses the variant in context).
+	const VariantExample = variantSel
+		? variantExamples[name]?.[`${variantSel.axis}:${variantSel.option}`]
+		: undefined;
+	// A pass-through context (e.g. `a`) → render the example that triggers it (the item as a link) so
+	// its styling is visible and editable.
+	const contextSel = sel.type === "cva" && sel.target.kind === "context" ? sel.target : null;
+	const ContextExample = contextSel ? contextExamples[name]?.[contextSel.context] : undefined;
 	const topRef = useRef<HTMLDivElement>(null);
 	const [snap, setSnap] = useState<Snap | null>(null);
 
@@ -91,16 +106,29 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 				</Section>
 			)}
 
-			{variantSel &&
-				(Primary ? (
-					<Section label={`${variantSel.axis} · ${variantSel.option}`}>
+			{variantSel && (
+				<Section label={`${variantSel.axis} · ${variantSel.option}`}>
+					{VariantExample ? (
+						<VariantExample />
+					) : Primary ? (
 						<Primary {...selectionVariantProps(sel)} />
-					</Section>
-				) : (
-					<Section label={`${variantSel.axis} · ${variantSel.option}`}>
+					) : (
 						<p className="text-sm text-subtext0">No primary example for {name} yet.</p>
-					</Section>
-				))}
+					)}
+				</Section>
+			)}
+
+			{contextSel && (
+				<Section label={`[${contextSel.context}]`}>
+					{ContextExample ? (
+						<ContextExample />
+					) : (
+						<p className="text-sm text-subtext0">
+							No {contextSel.context} example for {name} yet.
+						</p>
+					)}
+				</Section>
+			)}
 		</div>
 	);
 }

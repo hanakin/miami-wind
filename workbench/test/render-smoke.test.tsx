@@ -99,10 +99,11 @@ describe("examples index", () => {
 		}
 	});
 
-	// Every component with examples needs a primary so filtering to a variant has something to render.
-	it("every component with examples has a primary for variant rendering", () => {
-		for (const comp of Object.keys(examples)) {
-			expect(typeof primaryExamples[comp]).toBe("function");
+	// Primaries are optional — only cva components use variant rendering, and ExamplePreview degrades
+	// gracefully when a component has none (e.g. separator). Where present, each must be a component.
+	it("every primary is a component", () => {
+		for (const fn of Object.values(primaryExamples)) {
+			expect(typeof fn).toBe("function");
 		}
 	});
 });
