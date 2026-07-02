@@ -3,6 +3,7 @@ import { ItemDemo, ItemPrimary } from "./item/item-demo";
 import { ItemGroupExample } from "./item/item-group";
 import { ItemHeaderDemo } from "./item/item-header";
 import { ItemLinkExample } from "./item/item-link";
+import { ItemMediaIconExample, ItemMediaImageExample } from "./item/item-media";
 import { SeparatorDemo } from "./separator/separator-demo";
 
 export type ExampleEntry = { name: string; label: string; Component: ComponentType };
@@ -26,11 +27,17 @@ export const primaryExamples: Record<string, ComponentType<Record<string, string
 	item: ItemPrimary,
 };
 
-// Per-variant example override, keyed by `axis:option`. Use when a variant doesn't read as a lone
-// primary — e.g. item's `default` variant is transparent, so show it in the group (a separated list)
-// where a borderless item makes sense. Rendered as-is; the example itself uses the variant.
+// Per-variant example override, keyed by `symbol:axis:option` (symbol = the owning cva's export name,
+// since a component can have several). Use when a variant doesn't read as a lone primary — item's root
+// `default` is transparent (show it in a group), and the media cva's icon/image variants live on
+// <ItemMedia>, not the root, so they need an example that puts the variant there. Rendered as-is; the
+// example itself uses the variant. Unmapped variants fall back to the root primary (see example-preview).
 export const variantExamples: Record<string, Record<string, ComponentType>> = {
-	item: { "variant:default": ItemGroupExample },
+	item: {
+		"itemVariants:variant:default": ItemGroupExample,
+		"itemMediaVariants:variant:icon": ItemMediaIconExample,
+		"itemMediaVariants:variant:image": ItemMediaImageExample,
+	},
 };
 
 // Per-component example for a pass-through context (keyed by the context, e.g. `a`). Rendered when

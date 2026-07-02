@@ -32,10 +32,12 @@ export function ExamplePreview({ name, sel }: { name: string; sel: Selection }) 
 	// modified, and newly-added variants alike, since the option comes from the live cva model.
 	const variantSel = sel.type === "cva" && sel.target.kind === "option" ? sel.target : null;
 	const Primary = primaryExamples[name];
-	// Some variants don't read as a lone card — e.g. item's `default` is fully transparent. When a
-	// richer example is mapped for the exact option, show that instead (it uses the variant in context).
+	// Some variants don't read as a lone card — e.g. item's `default` is fully transparent, and a media
+	// cva's icon/image variants live on <ItemMedia>, not the root. When a richer example is mapped for
+	// the exact cva option (keyed by symbol:axis:option), show that instead (it uses the variant in
+	// context); otherwise the root primary below renders with the option applied.
 	const VariantExample = variantSel
-		? variantExamples[name]?.[`${variantSel.axis}:${variantSel.option}`]
+		? variantExamples[name]?.[`${variantSel.symbol}:${variantSel.axis}:${variantSel.option}`]
 		: undefined;
 	// A pass-through context (e.g. `a`) → render the example that triggers it (the item as a link) so
 	// its styling is visible and editable.
