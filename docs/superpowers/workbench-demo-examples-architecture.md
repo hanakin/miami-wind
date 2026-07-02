@@ -17,6 +17,10 @@ are composites of the `ui/` primitives.
 - **`workbench/src/components/demo/<component>/<demo>.tsx` — the demo section.** One finalized, proper
   shadcn demo per file. **One concern per file** — no synthetic/parameterized components, no multi-export
   files. Ported from real shadcn source (`apps/v4/examples/radix`), with our imports/icons.
+  - **The canonical demo `<component>.tsx` is sacred.** The frontmost singular version — the component's
+    simplest single instance from shadcn's demo (for `item`: the one `variant="outline"` Basic Item) —
+    lives in `<component>.tsx` (same name as the component, so it sorts first). It stays **untouched**;
+    never alter it to cover a variant/size/context — those go in the other demos.
 - **`workbench/src/components/examples/<component>/<filterKey>.tsx` — the filter section, override files
   ONLY.** A modified/forced render for a filter that *can't* just reuse a demo — e.g. an exploded,
   force-open dropdown menu so its hidden slots are reachable (the trigger filter still reuses the demo).

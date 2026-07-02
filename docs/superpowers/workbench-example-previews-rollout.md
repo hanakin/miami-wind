@@ -188,6 +188,15 @@ demo, invented "from scratch" content, a dropped `xs` size, and a vendored primi
 exists to prevent.** Every rule below is mandatory and unambiguous. When in doubt, author **fewer** files
 with **100% real** shadcn content, not more.
 
+**RULE 0 — the canonical demo is sacred; never touch it.** The component's **frontmost singular version**
+— its simplest single instance straight from shadcn's demo (for `item`: the one `variant="outline"` Basic
+Item) — lives in `components/demo/<component>/<component>.tsx` (**same name as the component**, so it sorts
+first and reads as *the* component). It MUST remain **untouched**: never flip its variant, resize it, or
+add to it to satisfy a filter. ALL coverage — other variants, sizes, contexts, the remaining slots — goes
+in the OTHER demos. (This is why `item.tsx` stays the plain outline item, while `item-group` carries
+default+separator+image-media, `item-header` carries muted+footer, `item-link` carries `[a]`+small+icon,
+and `item-size` carries xs.)
+
 1. **CONSOLIDATE to the FEWEST demos that cover every data-slot. This is the prime directive.** Pick the
    smallest set of real shadcn demos that, together, put every `data-slot` on screen at least once (rule 7
    — including `footer`/`media`/`separator`). **Do NOT create one file per shadcn example** — the shadcn
