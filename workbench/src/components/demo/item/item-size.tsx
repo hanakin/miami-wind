@@ -1,8 +1,8 @@
 import { Icon } from "@registry-ui/icon";
 import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "~/components/ui/item";
 
-// The extra-small size — a single, self-contained item. default is item-demo, small is item-link; this
-// is the one size the other demos don't cover.
+// The extra-small size — a single, self-contained item. default size is the canonical item.tsx, small is
+// item-link; xs is the one size no other demo carries, so it gets this minimal single-item demo.
 export function ItemSizeDemo() {
 	return (
 		<div className="flex w-full max-w-md flex-col gap-6">
