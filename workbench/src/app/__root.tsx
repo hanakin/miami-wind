@@ -127,7 +127,7 @@ function Navbar() {
 	};
 
 	return (
-		<header className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-2">
+		<header className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-3">
 			<div className="flex items-center gap-3">
 				<img src="/miami-wind.svg" alt="Miami Wind" className="size-11" />
 				<span className="font-semibold tracking-tight">Miami Wind</span>
