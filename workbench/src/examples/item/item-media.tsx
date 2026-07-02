@@ -1,36 +1,83 @@
 import { Icon } from "@registry-ui/icon";
-import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "~/components/ui/item";
+import { Button } from "~/components/ui/button";
+import {
+	Item,
+	ItemActions,
+	ItemContent,
+	ItemDescription,
+	ItemGroup,
+	ItemMedia,
+	ItemTitle,
+} from "~/components/ui/item";
 
-// Item whose media is the `icon` variant of itemMediaVariants — a bordered square that sizes any bare
-// child <svg> to size-4 (`[&_svg:not([class*='size-'])]:size-4`). The Icon carries NO size class, so
-// that rule applies and the icon becomes live-resizable via the media cva. Shown when the media cva's
-// `variant · icon` (or its `icon size` context) is selected, so the variant is visible in context.
+// shadcn's item-icon demo (lucide ShieldAlert → our Icon). The icon is deliberately size-less, so the
+// `icon` media variant's `[&_svg:not([class*='size-'])]:size-4` sizes it — which is exactly what the
+// icon-size context edits live. Shown for the media cva's `variant · icon` and `icon size` targets.
 export function ItemMediaIconExample() {
 	return (
-		<Item variant="outline" className="max-w-md">
+		<Item variant="outline" className="max-w-lg">
 			<ItemMedia variant="icon">
-				<Icon icon="mdi:cloud-outline" />
+				<Icon icon="mdi:shield-alert-outline" />
 			</ItemMedia>
 			<ItemContent>
-				<ItemTitle>Cloud sync</ItemTitle>
-				<ItemDescription>Your files are backed up.</ItemDescription>
+				<ItemTitle>Security Alert</ItemTitle>
+				<ItemDescription>New login detected from unknown device.</ItemDescription>
 			</ItemContent>
+			<ItemActions>
+				<Button size="sm" variant="outline">
+					Review
+				</Button>
+			</ItemActions>
 		</Item>
 	);
 }
 
-// Item whose media is the `image` variant — a size-10 rounded box whose child <img> fills it
-// (`[&_img]:size-full [&_img]:object-cover`). Shown for the media cva's `variant · image` / image size.
+// shadcn's item-image demo (next/image → plain <img>). Each item's `image` media variant frames the
+// cover via `[&_img]:size-full [&_img]:object-cover` — what the image-size context edits. Shown for the
+// media cva's `variant · image` and `image size` targets.
+const music = [
+	{
+		title: "Midnight City Lights",
+		artist: "Neon Dreams",
+		album: "Electric Nights",
+		duration: "3:45",
+	},
+	{
+		title: "Coffee Shop Conversations",
+		artist: "The Morning Brew",
+		album: "Urban Stories",
+		duration: "4:05",
+	},
+	{ title: "Digital Rain", artist: "Cyber Symphony", album: "Binary Beats", duration: "3:30" },
+];
+
 export function ItemMediaImageExample() {
 	return (
-		<Item variant="outline" className="max-w-md">
-			<ItemMedia variant="image">
-				<img src="https://github.com/shadcn.png" alt="" />
-			</ItemMedia>
-			<ItemContent>
-				<ItemTitle>shadcn</ItemTitle>
-				<ItemDescription>Creator of shadcn/ui.</ItemDescription>
-			</ItemContent>
-		</Item>
+		<ItemGroup className="max-w-md gap-4">
+			{music.map((song) => (
+				<Item key={song.title} variant="outline" asChild role="listitem">
+					<a href="#">
+						<ItemMedia variant="image">
+							<img
+								src={`https://avatar.vercel.sh/${song.title}`}
+								alt={song.title}
+								width={32}
+								height={32}
+								className="object-cover grayscale"
+							/>
+						</ItemMedia>
+						<ItemContent>
+							<ItemTitle className="line-clamp-1">
+								{song.title} - <span className="text-muted-foreground">{song.album}</span>
+							</ItemTitle>
+							<ItemDescription>{song.artist}</ItemDescription>
+						</ItemContent>
+						<ItemContent className="flex-none text-center">
+							<ItemDescription>{song.duration}</ItemDescription>
+						</ItemContent>
+					</a>
+				</Item>
+			))}
+		</ItemGroup>
 	);
 }

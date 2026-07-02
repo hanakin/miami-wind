@@ -35,6 +35,10 @@ export const primaryExamples: Record<string, ComponentType<Record<string, string
 export const variantExamples: Record<string, Record<string, ComponentType>> = {
 	item: {
 		"itemVariants:variant:default": ItemGroupExample,
+		// The media cva's variants live on <ItemMedia>, which the root primary lacks — so EVERY media
+		// variant needs an example, not just the ones that "read as nothing". default = item-group's
+		// avatars (default media), icon = item-icon, image = item-image (all shadcn demos).
+		"itemMediaVariants:variant:default": ItemGroupExample,
 		"itemMediaVariants:variant:icon": ItemMediaIconExample,
 		"itemMediaVariants:variant:image": ItemMediaImageExample,
 	},
