@@ -129,7 +129,7 @@ function Navbar() {
 	return (
 		<header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border px-4">
 			<div className="flex items-center gap-3">
-				<span className="size-3 rounded-full bg-primary" />
+				<img src="/miami-wind.svg" alt="Miami Wind" className="size-11" />
 				<span className="font-semibold tracking-tight">Miami Wind</span>
 				<ScopeSelect />
 				<SceneTabs />
