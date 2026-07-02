@@ -10,12 +10,13 @@ export type Selection = { type: "cva"; target: Target } | { type: "slot"; slot: 
 // the controls reflect the component you see and "none" clears a real color.
 export function firstVariantTarget(model: CvaModel | undefined): Target {
 	if (!model) return { kind: "base" };
+	const symbol = model.exportName;
 	for (const [axis, opt] of Object.entries(model.defaultVariants)) {
-		if (typeof opt === "string") return { kind: "option", axis, option: opt };
+		if (typeof opt === "string") return { kind: "option", axis, option: opt, symbol };
 	}
 	const [axis, opts] = Object.entries(model.variants)[0] ?? [];
 	const opt = opts && Object.keys(opts)[0];
-	return axis && opt ? { kind: "option", axis, option: opt } : { kind: "base" };
+	return axis && opt ? { kind: "option", axis, option: opt, symbol } : { kind: "base", symbol };
 }
 
 export function initialSelection(model: CvaModel | undefined): Selection {

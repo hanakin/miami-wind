@@ -21,6 +21,7 @@ import {
 	targetClass,
 } from "~/utils/cva-edit";
 import type { Selection } from "~/utils/editor-selection";
+import { slotForCva } from "~/utils/live-css";
 import type { CvaModel } from "../../server/lib/cva-codec";
 
 export function CvaControls({
@@ -32,7 +33,8 @@ export function CvaControls({
 	sel: Selection;
 	onSel: (sel: Selection) => void;
 }) {
-	const model = useComponentModel(name);
+	const anyModel = useComponentModel(name);
+	const modelsMap = useWorkbench((s) => s.models);
 	// Working classes for the selected surface, read live from the store (empty until first edit).
 	const slotBase = useWorkbench((s) =>
 		sel.type === "slot" ? (s.slots[sel.slot] ?? "") : undefined,
@@ -46,77 +48,98 @@ export function CvaControls({
 		[slotsMap, slotOwner, name],
 	);
 
-	// "Has a cva" = some model for this name carries a real base/variants (the live-cva seed of an inline
-	// cva), vs the blank seed useEnsureModel gives every component. Checked across all models (a blank and
-	// a real seed can coexist under one name). cva components edit via cva; the rest via slots — and a
-	// non-cva component gets NO cva target, so it can never write a phantom cva file.
-	const hasCva = useWorkbench((s) =>
-		Object.values(s.models).some(
-			(m) => m.name === name && (m.base.trim() !== "" || Object.keys(m.variants).length > 0),
-		),
+	// Every real cva for this component, in declaration order. A component can have several — item has
+	// itemVariants (root) and itemMediaVariants (media) — and each edits its own file. "Real" = a
+	// live-cva seed carrying actual base/variants, vs the blank seed useEnsureModel gives every
+	// component; the blank is filtered out so a non-cva component gets NO cva target (and can never
+	// write a phantom cva file).
+	const cvas = useMemo(
+		() =>
+			Object.values(modelsMap).filter(
+				(m) => m.name === name && (m.base.trim() !== "" || Object.keys(m.variants).length > 0),
+			),
+		[modelsMap, name],
 	);
-	// Every data-slot in the source is selectable, cva or not — cva components layer Base/variants on
-	// top (built below). A cva'd slot's own static classes are a separate, legitimate edit from its cva.
-	const slotList = loadedSlots;
-	const firstSlot = slotList[0];
+	const hasCva = cvas.length > 0;
+	const multi = cvas.length > 1;
+	// The cva the current selection edits: matched by symbol, else the first (also the slot-selection
+	// fallback). Undefined only for a non-cva component, whose cva paths below never render.
+	const model =
+		(sel.type === "cva" ? cvas.find((m) => m.exportName === sel.target.symbol) : undefined) ??
+		cvas[0];
+
+	const firstSlot = loadedSlots[0];
 
 	// Non-cva component but the selection is still the default cva target → jump to its first slot.
 	useEffect(() => {
 		if (!hasCva && sel.type === "cva" && firstSlot) onSel({ type: "slot", slot: firstSlot });
 	}, [hasCva, sel.type, firstSlot, onSel]);
 
-	if (!model) return <p className="p-4 text-sm text-subtext0">Loading {name}…</p>;
-	const symbol = model.exportName;
-	const apply = (m: CvaModel) => workbenchStore.getState().setModel(symbol, m);
+	if (!anyModel) return <p className="p-4 text-sm text-subtext0">Loading {name}…</p>;
+	const apply = (m: CvaModel) => workbenchStore.getState().setModel(m.exportName, m);
 
-	// Pass-through contexts baked into the base as `[a]:…` (only apply when the item is an <a>, via
-	// asChild). Surface each as its own editable target so the link's styling isn't stranded in Base.
-	const contexts = /\[a\]:/.test(model.base) ? ["a"] : [];
-	const cvaOptions = hasCva
-		? [
-				{
-					value: "cva:base",
-					label: "Base",
-					sel: { type: "cva", target: { kind: "base" } } as Selection,
-				},
-				...contexts.map((context) => ({
-					value: `cva:context:${context}`,
-					label: `link (${context})`,
-					sel: { type: "cva", target: { kind: "context", context } } as Selection,
+	// One dropdown group per cva: Base, any pass-through contexts (`[a]` link), and every variant
+	// option — each tagged with the cva's export symbol so it edits the right file. Flat for a single
+	// cva; grouped and labeled by slot (item, item-media, …) when a component has several.
+	const cvaGroups = cvas.map((m) => {
+		const contexts = /\[a\]:/.test(m.base) ? ["a"] : [];
+		const options = [
+			{
+				value: `cva:${m.exportName}:base`,
+				label: "Base",
+				sel: { type: "cva", target: { kind: "base", symbol: m.exportName } } as Selection,
+			},
+			...contexts.map((context) => ({
+				value: `cva:${m.exportName}:ctx:${context}`,
+				label: `link (${context})`,
+				sel: {
+					type: "cva",
+					target: { kind: "context", context, symbol: m.exportName },
+				} as Selection,
+			})),
+			...Object.entries(m.variants).flatMap(([axis, opts]) =>
+				Object.keys(opts).map((option) => ({
+					value: `cva:${m.exportName}:opt:${axis}:${option}`,
+					label: `${axis} · ${option}`,
+					sel: {
+						type: "cva",
+						target: { kind: "option", axis, option, symbol: m.exportName },
+					} as Selection,
 				})),
-				...Object.entries(model.variants).flatMap(([axis, opts]) =>
-					Object.keys(opts).map((option) => ({
-						value: `cva:${axis}:${option}`,
-						label: `${axis} · ${option}`,
-						sel: { type: "cva", target: { kind: "option", axis, option } } as Selection,
-					})),
-				),
-			]
-		: [];
-	const slotOptions = slotList.map((slot) => ({
+			),
+		];
+		return { symbol: m.exportName, label: slotForCva(m.exportName), options };
+	});
+	const slotOptions = loadedSlots.map((slot) => ({
 		value: `slot:${slot}`,
 		label: slot.startsWith(`${name}-`) ? slot.slice(name.length + 1).replace(/-/g, " ") : slot,
 		sel: { type: "slot", slot } as Selection,
 	}));
-	const allOptions = [...cvaOptions, ...slotOptions];
+	const allOptions = [...cvaGroups.flatMap((g) => g.options), ...slotOptions];
 
+	// The default selection can be created before this component's model has loaded, so it may carry no
+	// symbol — fall back to the active (first) cva so the dropdown still reflects it.
+	const activeSymbol = sel.type === "cva" ? (sel.target.symbol ?? model?.exportName) : undefined;
 	const currentValue =
 		sel.type === "slot"
 			? `slot:${sel.slot}`
 			: sel.target.kind === "base"
-				? "cva:base"
+				? `cva:${activeSymbol}:base`
 				: sel.target.kind === "context"
-					? `cva:context:${sel.target.context}`
-					: `cva:${sel.target.axis}:${sel.target.option}`;
+					? `cva:${activeSymbol}:ctx:${sel.target.context}`
+					: `cva:${activeSymbol}:opt:${sel.target.axis}:${sel.target.option}`;
 
-	const value = sel.type === "slot" ? (slotBase ?? "") : targetClass(model, sel.target);
+	const value =
+		sel.type === "slot" ? (slotBase ?? "") : model ? targetClass(model, sel.target) : "";
 	const onChange =
 		sel.type === "slot"
 			? (v: string) => workbenchStore.getState().setSlot(sel.slot, v)
-			: (v: string) => apply(setTargetClass(model, sel.target, v));
+			: (v: string) => {
+					if (model) apply(setTargetClass(model, sel.target, v));
+				};
 	// When editing a variant option, base sits beneath it in the cascade — surface its colors as
 	// "inherited" so they can be overridden (e.g. set transparent to kill a base hover bg).
-	const inherited = sel.type === "cva" && sel.target.kind === "option" ? model.base : "";
+	const inherited = sel.type === "cva" && sel.target.kind === "option" && model ? model.base : "";
 
 	return (
 		<div className="flex flex-col gap-4 p-4">
@@ -137,11 +160,22 @@ export function CvaControls({
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
-						{cvaOptions.map((o) => (
-							<SelectItem key={o.value} value={o.value}>
-								{o.label}
-							</SelectItem>
-						))}
+						{multi
+							? cvaGroups.map((g) => (
+									<SelectGroup key={g.symbol}>
+										<SelectLabel>{g.label}</SelectLabel>
+										{g.options.map((o) => (
+											<SelectItem key={o.value} value={o.value}>
+												{o.label}
+											</SelectItem>
+										))}
+									</SelectGroup>
+								))
+							: cvaGroups[0]?.options.map((o) => (
+									<SelectItem key={o.value} value={o.value}>
+										{o.label}
+									</SelectItem>
+								))}
 						{slotOptions.length > 0 && (
 							<SelectGroup>
 								<SelectLabel>Surfaces</SelectLabel>
@@ -165,7 +199,7 @@ export function CvaControls({
 				}
 			/>
 
-			{hasCva && (
+			{hasCva && model && (
 				<details className="border-t border-border pt-3">
 					<summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-subtext0">
 						Manage variants

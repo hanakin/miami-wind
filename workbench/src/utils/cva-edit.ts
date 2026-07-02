@@ -3,10 +3,12 @@ import type { CvaModel } from "../../server/lib/cva-codec";
 // What the inspector is currently editing: the shared base classes, one option of one axis, or a
 // pass-through context (e.g. `a` — the `[a]:` classes that only apply when the item is an <a>). A
 // context target edits the base string too, but the inspector scopes it through the `[<context>]:` lens.
+// `symbol` names the owning cva (its export name) — a component can have several (item has itemVariants
+// and itemMediaVariants), so the target must say which one it edits.
 export type Target =
-	| { kind: "base" }
-	| { kind: "option"; axis: string; option: string }
-	| { kind: "context"; context: string };
+	| { kind: "base"; symbol?: string }
+	| { kind: "option"; axis: string; option: string; symbol?: string }
+	| { kind: "context"; context: string; symbol?: string };
 
 export function targetClass(model: CvaModel, target: Target): string {
 	if (target.kind === "option") return model.variants[target.axis]?.[target.option] ?? "";
@@ -31,7 +33,7 @@ export function targetLabel(target: Target): string {
 }
 
 export function sameTarget(a: Target, b: Target): boolean {
-	if (a.kind !== b.kind) return false;
+	if (a.kind !== b.kind || a.symbol !== b.symbol) return false;
 	if (a.kind === "option" && b.kind === "option") return a.axis === b.axis && a.option === b.option;
 	if (a.kind === "context" && b.kind === "context") return a.context === b.context;
 	return true; // base === base
