@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SourcePanel } from "~/components/component-views";
 import { CvaControls } from "~/components/cva-controls";
+import { DemoScene } from "~/components/demo-scene";
 import { EditorLayout } from "~/components/editor-layout";
-import { ExamplePreview } from "~/components/example-preview";
 import {
 	useComponentModel,
 	useComponentSlots,
@@ -22,8 +22,8 @@ function ComponentScope() {
 	return <ComponentEditor key={name} name={name} />;
 }
 
-// One component's editor: controls on the left; on the right, shadcn's example set with the selected
-// slot extracted beneath it. Custom primitives also show their read-only source.
+// One component's editor: controls on the left; on the right, the component's demos with the focused
+// filter (slot / variant / context) beneath them. Custom primitives also show their read-only source.
 function ComponentEditor({ name }: { name: string }) {
 	useEnsureModel(name);
 	useComponentSlots(name);
@@ -38,7 +38,7 @@ function ComponentEditor({ name }: { name: string }) {
 			controls={<CvaControls name={name} sel={sel} onSel={setSel} />}
 			preview={
 				<div className="flex h-full min-h-0 flex-col overflow-auto">
-					<ExamplePreview name={name} sel={sel} />
+					<DemoScene name={name} sel={sel} />
 					{isCustom && <SourcePanel name={name} />}
 				</div>
 			}

@@ -2,11 +2,10 @@
 import { Icon } from "@registry-ui/icon";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { ExamplePreview } from "~/components/example-preview";
+import { DemoScene } from "~/components/demo-scene";
 import { OpenRender, openRenders } from "~/components/open-renders";
 import { type PreviewRender, previews } from "~/components/previews";
 import { TooltipProvider } from "~/components/ui/tooltip";
-import { examples, primaryExamples } from "~/examples";
 
 afterEach(cleanup);
 
@@ -86,76 +85,35 @@ describe("exploded surfaces render in-scope", () => {
 	}
 });
 
-// The static examples index feeds both the picker and the example preview.
-describe("examples index", () => {
-	it("every entry has a component and a label under its component key", () => {
-		for (const [comp, list] of Object.entries(examples)) {
-			expect(list.length).toBeGreaterThan(0);
-			for (const e of list) {
-				expect(typeof e.Component).toBe("function");
-				expect(e.label).toBeTruthy();
-				expect(e.name.startsWith(comp)).toBe(true);
-			}
-		}
-	});
-
-	// Primaries are optional — only cva components use variant rendering, and ExamplePreview degrades
-	// gracefully when a component has none (e.g. separator). Where present, each must be a component.
-	it("every primary is a component", () => {
-		for (const fn of Object.values(primaryExamples)) {
-			expect(typeof fn).toBe("function");
-		}
-	});
-});
-
-// Top section renders shadcn's example set; selecting a slot extracts that data-slot from those same
-// rendered examples into the section below.
-describe("ExamplePreview", () => {
-	it("renders the item example set and extracts a selected slot", () => {
+// The demo scene globs each component's demos (no registration) and derives the focused filter: a slot
+// extracts its single default instance; a variant/context resolves the whole demo that represents it.
+describe("DemoScene", () => {
+	it("renders the item demos and extracts a selected slot", () => {
 		const { container } = render(
 			<TooltipProvider>
-				<ExamplePreview name="item" sel={{ type: "slot", slot: "item-title" }} />
+				<DemoScene name="item" sel={{ type: "slot", slot: "item-title" }} />
 			</TooltipProvider>,
 		);
-		// An example renders — asserted via content outside the extracted slot (item-title), so it
-		// isn't also duplicated in the snapshots below.
-		expect(screen.getByText("Action")).toBeTruthy(); // item-demo action button
-		// Extraction found item-title (not the empty state) and shows exactly one instance — the
-		// default use of the slot, not every occurrence.
+		// Demos rendered from the glob (each wrapped in [data-demo]).
+		expect(container.querySelectorAll("[data-demo]").length).toBeGreaterThan(0);
+		// The slot resolved to a single default instance, not the empty state.
 		expect(screen.queryByText(/Not present/)).toBeNull();
 		expect(screen.getByText(/^from /)).toBeTruthy();
 		expect(container.querySelectorAll("[data-slot='item-title']").length).toBeGreaterThan(0);
 	});
 
-	// Selecting a variant option re-renders the primary example carrying that variant — the same one
-	// instance shape as the slot view, so it's unambiguous which variant is in view.
-	it("renders a variant version of the primary example when a variant option is selected", () => {
+	it("resolves a variant filter to a demo that represents it", () => {
 		const { container } = render(
 			<TooltipProvider>
-				<ExamplePreview
+				<DemoScene
 					name="item"
-					sel={{ type: "cva", target: { kind: "option", axis: "variant", option: "muted" } }}
+					sel={{ type: "cva", target: { kind: "option", axis: "variant", option: "outline" } }}
 				/>
 			</TooltipProvider>,
 		);
-		expect(screen.getByText("variant · muted")).toBeTruthy();
-		expect(container.querySelector("[data-slot='item'][data-variant='muted']")).toBeTruthy();
-	});
-
-	// A size variant sets no `variant`, so the primary keeps its outline default — otherwise the
-	// transparent `default` variant would render an invisible box and the padding couldn't be seen.
-	it("renders a size variant on a bordered container so the padding is discernible", () => {
-		const { container } = render(
-			<TooltipProvider>
-				<ExamplePreview
-					name="item"
-					sel={{ type: "cva", target: { kind: "option", axis: "size", option: "sm" } }}
-				/>
-			</TooltipProvider>,
-		);
-		expect(screen.getByText("size · sm")).toBeTruthy();
+		expect(screen.getByText("variant · outline")).toBeTruthy();
 		expect(
-			container.querySelector("[data-slot='item'][data-size='sm'][data-variant='outline']"),
-		).toBeTruthy();
+			container.querySelectorAll("[data-slot='item'][data-variant='outline']").length,
+		).toBeGreaterThan(0);
 	});
 });

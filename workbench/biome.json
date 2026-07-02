@@ -41,7 +41,7 @@
 	},
 	"overrides": [
 		{
-			"includes": ["src/examples/**"],
+			"includes": ["src/components/demo/**", "src/components/examples/**"],
 			"linter": {
 				"rules": {
 					"a11y": {

@@ -2,14 +2,11 @@ import {
 	Item,
 	ItemContent,
 	ItemDescription,
-	ItemFooter,
 	ItemGroup,
 	ItemHeader,
 	ItemTitle,
 } from "~/components/ui/item";
 
-// shadcn's item-header model cards (next/image → <img>), plus ItemFooter rendering the `credit`
-// field shadcn ships but doesn't render — so this covers item-header AND item-footer.
 const models = [
 	{
 		name: "v0-1.5-sm",
@@ -41,7 +38,6 @@ export function ItemHeaderDemo() {
 				{models.map((model) => (
 					<Item key={model.name} variant="outline">
 						<ItemHeader>
-							{/* ponytail: next/image → plain <img>; we're on Vite, not Next. */}
 							<img
 								src={model.image}
 								alt={model.name}
@@ -54,9 +50,6 @@ export function ItemHeaderDemo() {
 							<ItemTitle>{model.name}</ItemTitle>
 							<ItemDescription>{model.description}</ItemDescription>
 						</ItemContent>
-						<ItemFooter>
-							<span className="text-xs text-muted-foreground">{model.credit}</span>
-						</ItemFooter>
 					</Item>
 				))}
 			</ItemGroup>
