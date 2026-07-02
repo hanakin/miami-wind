@@ -97,17 +97,17 @@ Delete `src/examples/index.ts`'s maps, `primaryExamples`/`variantExamples`/`cont
 
 ## Execution — this pass (item + groundwork), orchestrated
 
-1. **Demo authoring — two subagents.** Split item's demos across two agents; each ports its demos to
-   `components/demo/item/<demo>.tsx` from `gh api "…/apps/v4/examples/radix/item-<x>.tsx"` with the swaps
-   (lucide→`Icon` mdi, `next/image`→`<img>`, `@/registry/...`→`~/components/ui/...`, named export). Returns
-   file contents; does not wire or commit.
-2. **Demo QC — one subagent.** Checks every demo against its shadcn source: faithful content, correct
-   imports/icons, and that every intended `data-slot` / `variant` / `size` / `[a]` is present. Flags fixes.
-3. **Scene + teardown — orchestrator.** Build `demo-scene.tsx` (glob, demo section, filter key + derive,
+1. **Demo authoring — parallel subagents (one per demo).** Each ports one `components/demo/item/<demo>.tsx`
+   from `gh api "…/apps/v4/examples/radix/item-<x>.tsx"` with the swaps (lucide→`Icon` mdi,
+   `next/image`→`<img>`, `@/registry/...`→`~/components/ui/...`, named export). Returns file contents; does
+   not wire or commit.
+2. **Scene + teardown — orchestrator.** Build `demo-scene.tsx` (glob, demo section, filter key + derive,
    legacy fallback), delete the four `index.ts` maps + `ItemPrimary`/`ItemLinkExample`, wire the route,
-   integrate the QC'd demos.
-4. **Integrate + verify + final QC — orchestrator.** Gate + playwright per the verification strategy; the
-   orchestrator makes the final QC decision; commit.
+   integrate the demos.
+3. **Rollout-playbook overhaul — one subagent (separate track).** Writes the later-pass plan (below).
+4. **Integrate + verify + commit — orchestrator.** Gate + playwright per the verification strategy.
+
+The QC-staged multi-agent pipeline is **later-pass only** — see below; it does not apply to this pass.
 
 ## Later pass (the rollout playbook — separate deliverable)
 
