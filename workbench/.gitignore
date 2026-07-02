@@ -1,5 +1,7 @@
 node_modules
 dist
+# root .gitignore blanket-ignores public/ (registry output); workbench public/ is source
+!public/
 *.local
 .env
 .env.*
