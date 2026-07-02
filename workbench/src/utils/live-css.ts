@@ -127,8 +127,18 @@ function rulesForTarget(slot: string, attr: string, classString: string): string
 	return out;
 }
 
+// A cva's slot is its export name minus the `Variants` suffix, kebab-cased: itemMediaVariants →
+// item-media, tabsListVariants → tabs-list. The plugin seeds every cva with name=file, so name alone
+// can't tell a component's multiple cvas apart — the export name carries the slot.
+export function slotForCva(exportName: string): string {
+	return exportName
+		.replace(/Variants$/, "")
+		.replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+		.toLowerCase();
+}
+
 export function cssForModel(model: CvaModel): string {
-	const slot = model.name;
+	const slot = slotForCva(model.exportName);
 	const rules = rulesForTarget(slot, "", model.base);
 	for (const [axis, opts] of Object.entries(model.variants)) {
 		for (const [option, cls] of Object.entries(opts)) {

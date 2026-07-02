@@ -71,3 +71,20 @@ describe("live-css link context", () => {
 		expect(cssForModel({ ...linkModel, base: "[&_svg]:size-4" })).toBe("");
 	});
 });
+
+// The plugin seeds every cva with name=file, so a component's secondary cva must get its slot from the
+// export name — else itemMediaVariants would paint [data-slot="item"] instead of "item-media".
+describe("live-css slot from export name", () => {
+	it("derives a secondary cva's slot from its export name", () => {
+		const media: CvaModel = {
+			name: "item",
+			localName: "itemMedia",
+			exportName: "itemMediaVariants",
+			base: "rounded-sm",
+			variants: {},
+			defaultVariants: {},
+			compoundVariants: [],
+		};
+		expect(cssForModel(media)).toContain('[data-preview] [data-slot="item-media"]');
+	});
+});
