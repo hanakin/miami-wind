@@ -2,6 +2,7 @@ import {
 	Item,
 	ItemContent,
 	ItemDescription,
+	ItemFooter,
 	ItemGroup,
 	ItemHeader,
 	ItemTitle,
@@ -35,8 +36,8 @@ export function ItemHeaderDemo() {
 	return (
 		<div className="flex w-full max-w-xl flex-col gap-6">
 			<ItemGroup className="grid grid-cols-3 gap-4">
-				{models.map((model) => (
-					<Item key={model.name} variant="outline">
+				{models.map((model, i) => (
+					<Item key={model.name} variant={i === 0 ? "muted" : "outline"}>
 						<ItemHeader>
 							<img
 								src={model.image}
@@ -50,6 +51,9 @@ export function ItemHeaderDemo() {
 							<ItemTitle>{model.name}</ItemTitle>
 							<ItemDescription>{model.description}</ItemDescription>
 						</ItemContent>
+						<ItemFooter>
+							<span className="text-xs text-muted-foreground">{model.credit}</span>
+						</ItemFooter>
 					</Item>
 				))}
 			</ItemGroup>

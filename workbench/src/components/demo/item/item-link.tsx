@@ -1,29 +1,20 @@
 import { Icon } from "@registry-ui/icon";
 
-import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "~/components/ui/item";
+import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "~/components/ui/item";
 
 export function ItemLink() {
 	return (
-		<div className="flex w-full max-w-md flex-col gap-4">
-			<Item asChild>
+		<div className="flex w-full max-w-md flex-col gap-6">
+			<Item variant="outline" size="sm" asChild>
 				<a href="#">
+					<ItemMedia>
+						<Icon icon="mdi:check-decagram" className="size-5" />
+					</ItemMedia>
 					<ItemContent>
-						<ItemTitle>Visit our documentation</ItemTitle>
-						<ItemDescription>Learn how to get started with our components.</ItemDescription>
+						<ItemTitle>Your profile has been verified.</ItemTitle>
 					</ItemContent>
 					<ItemActions>
 						<Icon icon="mdi:chevron-right" className="size-4" />
-					</ItemActions>
-				</a>
-			</Item>
-			<Item variant="outline" asChild>
-				<a href="#" target="_blank" rel="noopener noreferrer">
-					<ItemContent>
-						<ItemTitle>External resource</ItemTitle>
-						<ItemDescription>Opens in a new tab with security attributes.</ItemDescription>
-					</ItemContent>
-					<ItemActions>
-						<Icon icon="mdi:open-in-new" className="size-4" />
 					</ItemActions>
 				</a>
 			</Item>

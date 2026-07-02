@@ -63,6 +63,9 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 		: ctx
 			? `a[data-slot="${name}"]`
 			: null;
+	// Fallback for a variant that lives on a sub-slot, not the root — e.g. item-media's icon/image
+	// (data-variant on [data-slot=item-media]). Tried only if the root-scoped match finds nothing.
+	const deriveFallback = opt ? `[data-${opt.axis}="${opt.option}"]` : null;
 
 	const topRef = useRef<HTMLDivElement>(null);
 	const [focus, setFocus] = useState<Focus>({ kind: "none" });
@@ -100,10 +103,14 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 				}
 			} else if (deriveSelector) {
 				// The whole demo that represents this variant/context — reuse a finalized demo, don't invent.
-				for (const s of sections) {
-					if (s.querySelector(deriveSelector)) {
-						setFocus({ kind: "demo", name: s.dataset.demo ?? "" });
-						return;
+				// Root-scoped match first, then the sub-slot fallback.
+				for (const dsel of [deriveSelector, deriveFallback]) {
+					if (!dsel) continue;
+					for (const s of sections) {
+						if (s.querySelector(dsel)) {
+							setFocus({ kind: "demo", name: s.dataset.demo ?? "" });
+							return;
+						}
 					}
 				}
 			}
@@ -117,7 +124,7 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 			alive = false;
 			clearTimeout(t);
 		};
-	}, [name, slot, filterKey, deriveSelector]);
+	}, [name, slot, filterKey, deriveSelector, deriveFallback]);
 
 	return (
 		<div data-preview className="flex flex-col gap-8 p-6">
