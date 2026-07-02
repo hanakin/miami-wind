@@ -95,14 +95,29 @@ Delete `src/examples/index.ts`'s maps, `primaryExamples`/`variantExamples`/`cont
 - **Done when:** item demos match shadcn, every item filter resolves to a real demo (zero synthetic), gate
   green, screenshots verified, committed to `main` (one commit per coherent step).
 
-## Execution — subagents (orchestrated)
+## Execution — this pass (item + groundwork), orchestrated
 
-1. **Demo authoring — parallel subagents, one per demo.** Each ports one `components/demo/item/<demo>.tsx`
-   from `gh api "…/apps/v4/examples/radix/item-<x>.tsx"` with the swaps (lucide→`Icon` mdi,
-   `next/image`→`<img>`, `@/registry/...`→`~/components/ui/...`, named export). Returns file contents; does
-   not wire or commit.
-2. **Scene + teardown — orchestrator.** Build `demo-scene.tsx` (glob, demo section, filter key + derive),
-   delete the maps/synthetic components, bridge `open-renders.tsx`→`examples/`, wire the route. Integrate
-   the authored demos.
-3. **Spec overhaul — one subagent.** Overhaul the rollout playbook + reconcile the context-editing plan.
-4. **Integrate + verify + commit — orchestrator.** Gate + playwright per the strategy above.
+1. **Demo authoring — two subagents.** Split item's demos across two agents; each ports its demos to
+   `components/demo/item/<demo>.tsx` from `gh api "…/apps/v4/examples/radix/item-<x>.tsx"` with the swaps
+   (lucide→`Icon` mdi, `next/image`→`<img>`, `@/registry/...`→`~/components/ui/...`, named export). Returns
+   file contents; does not wire or commit.
+2. **Demo QC — one subagent.** Checks every demo against its shadcn source: faithful content, correct
+   imports/icons, and that every intended `data-slot` / `variant` / `size` / `[a]` is present. Flags fixes.
+3. **Scene + teardown — orchestrator.** Build `demo-scene.tsx` (glob, demo section, filter key + derive,
+   legacy fallback), delete the four `index.ts` maps + `ItemPrimary`/`ItemLinkExample`, wire the route,
+   integrate the QC'd demos.
+4. **Integrate + verify + final QC — orchestrator.** Gate + playwright per the verification strategy; the
+   orchestrator makes the final QC decision; commit.
+
+## Later pass (the rollout playbook — separate deliverable)
+
+A subagent rewrites `docs/superpowers/workbench-example-previews-rollout.md` as the **later-pass** plan for
+the other 55 components (and reconciles `workbench-cva-context-editing.md`). It must:
+- describe the new architecture (two folders under `components/`, glob scene, demos-per-file, filter
+  override-or-derive, no maps);
+- **task the later pass with cleaning up the old way on its way out** — as each component migrates to
+  `components/demo/`, delete its legacy `previews` / `open-renders` entry, until the legacy fallback and
+  `example-preview.tsx` are gone;
+- **codify a per-component multi-agent pipeline:** two demo-build agents → one demo-QC agent → (trailing,
+  once demos pass) one example/override-build agent → one agent that fixes the demos from the example
+  findings → one example-QC agent → **final QC decision by the orchestrator.**
