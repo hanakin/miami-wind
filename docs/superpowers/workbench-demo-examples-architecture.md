@@ -57,10 +57,12 @@ Delete `src/examples/index.ts`'s maps, `primaryExamples`/`variantExamples`/`cont
 ## Scope of THIS pass
 
 ### Item reference (fix it)
-- Build `components/demo/item/`: `item-demo`, `item-group`, `item-header`, `item-link`, `item-icon`,
-  `item-image`, `item-variant`, `item-size` — each a proper shadcn radix demo, one file, our
+- Build `components/demo/item/`: `item` (the canonical, untouched `variant="outline"` Basic Item),
+  `item-group`, `item-header`, `item-link`, `item-size` — each a proper shadcn radix demo, one file, our
   imports/icons. Together they cover every item `data-slot`, every `variant`/`size` option, and the `[a]`
-  link context, so every filter resolves to a real demo.
+  link context, so every filter resolves to a real demo. (There is **no** `item-icon`/`item-image`/
+  `item-variant` file — icons, images, and each variant are folded **into** the demos above; see the
+  rollout playbook's WORKFLOW rules.)
 - **Item needs no `components/examples/` overrides.** Item-in-a-menu is *not* an item-specific context
   like `[a]`. `[a]:` styles live in item's own cva and only fire when it's an `<a>`, so they need the link
   demo. But an item inside a dropdown is just item (asChild-wrapped) placed in a menu **container** — its
@@ -69,7 +71,7 @@ Delete `src/examples/index.ts`'s maps, `primaryExamples`/`variantExamples`/`cont
   that override lives in `components/examples/dropdown-menu/`, built in the later pass. So the override
   *mechanism* is groundwork here, exercised by portal components later — item itself has none.
 - Delete the old `src/examples/item/*` (crammed) files, the four `index.ts` maps, `ItemPrimary`,
-  `ItemLinkExample`. Move the `separator` demo to `components/demo/separator/separator-demo.tsx`.
+  `ItemLinkExample`. Move the `separator` demo to `components/demo/separator/separator.tsx` (canonical name).
 
 ### Groundwork for others (set up, don't fill)
 - The scene + two-folder + glob + filter-derivation are **generic** — any component's demos dropped into
