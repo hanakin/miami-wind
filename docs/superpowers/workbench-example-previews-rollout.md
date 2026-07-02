@@ -76,7 +76,16 @@ pipeline in §9 is that shape; skim it now, execute it later.
 - **`DemoScene` is generic** — signature `{ name, sel }`, wired at `src/app/components.$name.tsx`. Never
   edit it per component.
 - **Import primitives from `~/components/ui/<name>`.** `custom-resolve` (`plugin/custom-resolve.ts`)
-  redirects that to the registry override if one exists, else the vanilla vendored primitive.
+  redirects that to the **registry override** `registry/components/ui/<name>.tsx` if one exists, else the
+  vanilla vendored primitive `src/components/ui/<name>.tsx`.
+- **Registry overrides are the user's customization layer — they TRUMP and ADD to what the editor displays.**
+  A registry **component** override (`registry/components/ui/<name>.tsx`) replaces the vendored primitive for
+  rendering; a registry **cva** override (`registry/components/ui/cva/<name>.ts`, loaded via `/api/cva` →
+  `loadOverrides`) overwrites the inline cva seed. Either can **add** variants/sizes/slots/contexts the
+  baseline doesn't have, or restyle existing ones. The editor displays the **resolved** component (registry
+  where present, else vendored), so that is what your demos must cover — a registry override that adds a
+  variant means a demo must show it. Never "fix" a registry override to match radix-nova: it is intentional
+  user customization and wins by design.
 - **A component may define more than one cva.** `item` has `itemVariants` **and** `itemMediaVariants`. The
   editor surfaces **each** cva's axes/options, grouped by cva. Your obligation: **every option of every
   cva** renders in some demo.
@@ -166,19 +175,27 @@ listing over the `†` marks if they ever disagree.
 
 ### The derivation procedure (do this per component)
 
-1. **Derive the requirement set** from the component itself — read `components/ui/<name>.tsx` and list every
-   `data-slot`, every axis+option of every cva, and every `[a]`/`[&_svg]`/`[&_img]` context (grep the whole
-   file). *Do this against a primitive already synced to its radix-nova style source* (Before-you-start /
-   stage 0) — a stale primitive missing a size gives you a wrong set.
+1. **Derive the requirement set from the EFFECTIVE (resolved) component** — the one the editor displays.
+   Read the **registry override** `registry/components/ui/<name>.tsx` **and** cva override
+   `registry/components/ui/cva/<name>.ts` first if they exist (they trump and can ADD to the baseline), else
+   the vendored `src/components/ui/<name>.tsx`. List every `data-slot`, every axis+option of every cva, and
+   every `[a]`/`[&_svg]`/`[&_img]` context (grep the whole file). Cover whatever the resolved component
+   defines — a registry override's added variant/size/context is a requirement like any other. *Sync the
+   vendored baseline to its radix-nova style source first* (Before-you-start / stage 0) so the baseline set
+   is right; the registry override, by contrast, is authoritative as-is — don't reconcile it to radix-nova.
 2. **Fetch and read the component's real shadcn demos.** Listing + fetching to *inspect* is cheap and
    encouraged; note which requirement each demo satisfies (which `data-variant`/`data-size`/slot/context it
    renders). You only *author* the minimal covering subset.
 3. **Set the canonical demo** = the component's frontmost single instance = `<component>.tsx`, untouched
    (RULE 0).
 4. **Pick the fewest demos that cover the set, and fold any still-uncovered requirement into one of them**
-   via RULE 4 — never a dedicated per-feature file (rule 3). Precedence when a requirement has no home:
-   **fold onto an existing demo → port one more real demo that naturally carries it → (last resort) an
-   `examples/` override.**
+   via RULE 4 (at most **one** deviation per demo — rule 4). Precedence when a requirement has no home:
+   **(1) fold it onto an existing non-canonical demo via a single RULE 4 alteration → (2) if no eligible demo
+   can take it (none exists, or the only candidate already has its one deviation), port one more real shadcn
+   demo that naturally carries it → (3) last resort — a new minimal single-instance demo dedicated to that
+   one requirement, exactly how `item-size` covers `xs`.** A forced-render `examples/` override is a
+   *different* tool — for portal/hidden-surface slots that can't render in a normal demo at all (§6) — not a
+   step in this precedence.
 5. **Confirm the demos fully cover the set, then verify every filter resolves** (§10).
 
 ### RULE 0 — the canonical demo is sacred; never touch it
@@ -190,10 +207,13 @@ demos.
 
 ### Rules 1–8
 
-1. **Consolidate to the FEWEST demos that cover the requirement set** — the prime directive. Port only as
-   many real demos as coverage needs; if two cover the same requirements, keep one. Don't create one file
-   per shadcn example. A typical non-portal component is **1–3 demo files** (item's five is high, because
-   its requirement set is unusually large — ten slots, two cvas, three contexts).
+1. **Consolidate to the FEWEST demos that cover the requirement set** — the prime directive, **subject to
+   one deviation per demo (rule 4).** Port only as many real demos as coverage needs; if two cover the same
+   requirements, keep one. Don't create one file per shadcn example. But don't over-consolidate either: if
+   covering two requirements on one demo would need two deviations, split them across demos — clarity beats
+   raw minimum (that's why `xs` got its own `item-size` instead of piling onto another demo). A typical
+   non-portal component is **1–3 demo files** (item's five is high, because its requirement set is unusually
+   large — ten slots, two cvas, three contexts).
 2. **Port real shadcn demos — never invent, author from scratch, or "simplify."** A demo is a faithful port
    (minus the swaps, plus only the RULE 4 incorporations). If the docs show it, port it; if not, it doesn't
    exist for this pass. (Exception: the `†` stock-demo-less components — build a faithful minimal demo from
@@ -205,7 +225,12 @@ demos.
    - **This is not "assume it's already there."** Real demos won't always exercise every variant, context,
      or slot you need (item's `muted` appeared in none; `button` may not show every variant). When a
      requirement is missing, **fold it into an existing demo** via RULE 4 — you don't skip it, and you don't
-     spawn a file for it.
+     spawn a showcase file for it.
+   - **The sanctioned exception.** The files above are forbidden because they *duplicate* what a demo already
+     shows. A **minimal single-instance demo for a requirement with genuinely no home** — the last resort in
+     the derivation precedence, exactly how `item-size` covers `xs` — is allowed: it's the *only* place that
+     requirement renders, one instance, not a showcase. Reach it only after fold and port-another-real-demo
+     fail (derivation step 4).
 4. **The only permitted alterations to a ported demo are the minimal incorporations that make a required
    filter both PRESENT and LEGIBLE — and each must be ledgered.** Only these, only when no real demo
    naturally satisfies the requirement, and only in a **non-canonical** demo (RULE 0):
@@ -218,14 +243,24 @@ demos.
    Each is the smallest change that works and is recorded in the alterations ledger (Verification E).
    Anything else — invented items, changed copy, restructuring, fabricated contexts — is forbidden. This is
    the bounded "not fully verbatim" carve-out.
+
+   **At most ONE deviation per demo.** A *deviation* is a coverage alteration — a variant flip **or** an
+   applied size. Do **not** stack both on one demo (no variant flip *and* a size change together); aim for a
+   single deviation per demo, for simplicity. The minimal legibility tweak is **not** a second deviation — it
+   rides along with the one alteration it supports (item-link's added description is part of its single `sm`
+   deviation). If a second requirement would need a second deviation on the same demo, move it to another
+   demo — or, if it has no home, its own minimal demo (rule 3's sanctioned exception).
 5. **`size` is covered like variants — spread across the demos; a minimal extra demo only for a size that
    can't be folded.** Prefer rendering each size on an item a demo already has (item: `default` on the
-   canonical, `sm` on the link). Add **one** minimal single-item demo only for a size with no home (item's
-   `xs`). Never a size *showcase*. The vendored cva must carry every size (synced from the style source) so
-   each is selectable and its `[data-size=…]` derives.
+   canonical, `sm` on the link). A size with no home gets **one** minimal single-item demo (item's `xs`) —
+   the size instance of the general last resort (derivation step 4 / rule 3's exception); applying a size is
+   that demo's single deviation (rule 4). Never a size *showcase*. The **resolved** cva must carry every size
+   (the vendored baseline synced from the style source, **plus** any the registry override adds) so each is
+   selectable and its `[data-size=…]` derives.
 6. **One concern per demo file, ONE named export.** No synthetic/parameterized components, no multi-export
-   files. A shape no real demo can show even after RULE 4 folding is an `examples/` override (§6), not an
-   extra export or an invented demo.
+   files. A renderable requirement with no home after RULE 4 folding gets its **own minimal demo** (rule 3's
+   exception, derivation step 4.3) — not an extra export or a showcase. An `examples/` override (§6) is only
+   for a portal's hidden surface that can't render in a normal demo at all.
 7. **EVERY requirement gets a live example — walk the list, don't eyeball it.** Every slot (easy to forget:
    `footer`, `media`, `separator`, `group`), every option of every cva, every context must appear in a demo.
    A requirement with no live example is a defect — fold it in (RULE 4).
@@ -259,7 +294,10 @@ variant `icon`/`image`); contexts `[a]`, `[&_svg]`, `[&_img]`. Applying the rule
 | `item-separator` / `item-group` slots | `item-group.tsx` — `ItemSeparator` between rows, `ItemGroup` | Covered by the one group demo. |
 
 **Absent by design:** no `item-icon`/`item-image`/`item-variant`/`item-link` files; the canonical `item.tsx`
-shows exactly one item. Your component's table will look different — fill it from *its* demos and set.
+shows exactly one item; and **each demo carries at most one deviation** — `item-header` the `muted` flip,
+`item-link` the `sm` size (its description rides along), `item-size` the `xs` (its whole reason to exist),
+`item-group` none (default/image/separator are native to that demo). Your component's table will look
+different — fill it from *its* demos and set.
 
 ## `examples/` overrides — when a demo can't serve a filter
 
@@ -286,10 +324,12 @@ host `<div ref={setHost} />`; mount the content into it via the component's `Por
 `dropdown-menu`, establishes and validates this pattern for the rest — it does not exist yet; you are
 building it.
 
-**Non-portal overrides are rare.** If a cva option or context has no representing demo and no legal RULE 4
-fold (and porting one more real demo isn't possible), add `<axis>-<option>.tsx` / `context-<ctx>.tsx`. If
-every filter derives, there are **no** overrides. (`item` has none — an item in a menu is just item in a
-container; the menu is the dropdown-menu component's concern.)
+**Non-portal overrides are essentially never needed.** A renderable requirement (a variant, size, or
+context) with no home becomes its **own minimal demo** (derivation step 4.3 / rule 3's exception), not an
+override — an override is a *forced-render* tool for hidden/portal surfaces, and a normal variant/size/
+context renders fine as a static single-instance demo. So for non-portal components there are typically
+**no** overrides. (`item` has none — an item in a menu is just item in a container; the menu is the
+dropdown-menu component's concern.)
 
 ## Before you start — one-time global setup (orchestrator)
 
@@ -395,7 +435,9 @@ from **stage 0's requirement set for the specific component**, never from item.
 >   links, and variants **into** the demos.
 > - **The only permitted alterations, in a NON-canonical demo, each of which you must list:** a **variant
 >   flip**, an **applied size**, or a **minimal legibility tweak** — to cover a filter no real demo shows.
->   Nothing else changes.
+>   Nothing else changes. **At most ONE deviation (variant flip OR applied size) per demo** — don't stack
+>   both; the legibility tweak rides along with the one it supports. A requirement with no home gets its own
+>   minimal single-instance demo (like `item-size` for `xs`), not a second deviation piled on an existing one.
 > - **`size`:** spread across existing demos; add one minimal single-item demo only for a size with no home.
 >   If `<cva options>` lists a size, some demo must emit its `[data-size]`.
 > - **One concern per file, ONE named export.**
@@ -423,8 +465,9 @@ from **stage 0's requirement set for the specific component**, never from item.
 > the Root `open`, host `<div ref={setHost}/>`, `Portal container={host}` + `forceMount`,
 > `preventDefault` the close handlers, copy the content `className`. Key files by the content slot
 > (`<content-slot>.tsx`) and each inner slot you want filterable. Trigger reuses the demo.
-> **Non-portal:** add `<axis>-<option>.tsx` / `context-<ctx>.tsx` only for an option/context no demo can
-> represent even after a RULE 4 fold. If every filter derives, return "no overrides needed".
+> **Non-portal:** you almost certainly return **"no overrides needed"**. A renderable option/context with no
+> home is a **minimal demo** (a demo-build/demo-fix concern, e.g. `item-size` for `xs`), not an override —
+> overrides force-render hidden surfaces, which non-portal components don't have.
 >
 > **Findings:** for each demo issue (a missing `data-slot`, an option not emitting `[data-variant]`/
 > `[data-size]`, a wrong/absent `<a>` for `context-a`), report the file + exact fix.
@@ -454,8 +497,12 @@ A checklist, not two spot-checks. Gate first, then A–F; not done until all pas
   context → a real `<a>` / an icon / an image. The dropdown must **list every option of every cva** (a
   missing one = a bad cva sync — rule 5). None "Not present"/empty/wrong/synthetic — except an honestly
   flagged no-media-cva `[&_svg]`/`[&_img]` engine gap.
-- **(C) Primitive vs style source.** `components/ui/<name>.tsx` matches `apps/v4/styles/radix-nova/ui/
-  <name>.tsx` byte-faithfully: no invented classes, cva carries every size. Orchestrator-only fix.
+- **(C) Baseline primitive vs style source.** The **vendored baseline** `src/components/ui/<name>.tsx`
+  matches `apps/v4/styles/radix-nova/ui/<name>.tsx` byte-faithfully: no invented classes, cva carries every
+  size. Orchestrator-only fix. This checks the **baseline** — a **registry override**
+  (`registry/components/ui/<name>.tsx` or `cva/<name>.ts`) is intentional user customization that trumps and
+  is *not* reconciled to radix-nova; instead verify the demos cover whatever the resolved (override)
+  component adds.
 - **(D) Structural coverage audit (non-visual).** Cross-check the finalized demos against stage 0's set:
   every slot appears, every cva option emits its `[data-variant]`/`[data-size]`, every context has its
   element; fewest files; no forbidden per-feature files; canonical demo untouched and single-instance.

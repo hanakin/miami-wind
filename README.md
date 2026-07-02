@@ -1,3 +1,7 @@
+<p align="center">
+	<img src="Miami-Wind.svg" alt="Miami Wind logo" width="128" height="128" />
+</p>
+
 # Miami Wind Color Theme
 A Color scheme which is a blend of colors from [Tailwind CSS](https://tailwindcss.com/docs/colors) and Greyscale colors from [Catppuccin Mocha](https://catppuccin.com/) inspired by the theme [Miami Nights](https://github.com/monkeytypegame/monkeytype/blob/master/frontend/static/themes/miami_nights.css) for [Monkeytype](https://www.monkeytype.com).
 
