@@ -62,6 +62,9 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 		: opt?.axis === "size"
 			? `[data-slot="${name}"][data-size="${opt.option}"]`
 			: null;
+	// A size option may live on a sub-part (a secondary cva, e.g. input-group's button size) — fall back to
+	// any element carrying that data-size when the component-scoped selector finds none.
+	const extractFallback = opt?.axis === "size" ? `[data-size="${opt.option}"]` : null;
 	// A variant/context shows the whole demo that represents it. Root-scoped so a variant match is the
 	// root's own (not a sub-part with the same data-attr); the fallback catches sub-slot variants
 	// (item-media icon/image). A context routes to its selector: `a` → the link, else the media variant.
@@ -102,11 +105,14 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 			const sections = [...root.querySelectorAll<HTMLElement>("[data-demo]")];
 			if (extractSelector) {
 				// One instance only — the default use of the slot, or the single item at that size.
-				for (const s of sections) {
-					const el = s.querySelector<HTMLElement>(extractSelector);
-					if (el) {
-						setFocus({ kind: "slot", html: el.outerHTML, from: s.dataset.demo ?? "" });
-						return;
+				for (const esel of [extractSelector, extractFallback]) {
+					if (!esel) continue;
+					for (const s of sections) {
+						const el = s.querySelector<HTMLElement>(esel);
+						if (el) {
+							setFocus({ kind: "slot", html: el.outerHTML, from: s.dataset.demo ?? "" });
+							return;
+						}
 					}
 				}
 			} else if (deriveSelector) {
@@ -132,7 +138,7 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 			alive = false;
 			clearTimeout(t);
 		};
-	}, [name, extractSelector, filterKey, deriveSelector, deriveFallback]);
+	}, [name, extractSelector, extractFallback, filterKey, deriveSelector, deriveFallback]);
 
 	return (
 		<div data-preview className="flex flex-col gap-8 p-6">
