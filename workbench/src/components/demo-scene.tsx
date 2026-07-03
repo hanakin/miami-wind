@@ -1,5 +1,4 @@
 import { type ComponentType, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { previews } from "~/components/previews";
 import type { Selection } from "~/utils/editor-selection";
 
 type Demo = { name: string; Component: ComponentType };
@@ -31,6 +30,10 @@ function byComponent(modules: Record<string, unknown>): Record<string, Demo[]> {
 const DEMOS = byComponent(demoModules);
 const OVERRIDES = byComponent(overrideModules);
 
+// The component picker's list — every component with a demo/ folder (custom primitives like `icon` are
+// merged in by the shell). Replaces the old Object.keys(previews) source.
+export const demoComponentNames = Object.keys(DEMOS);
+
 // Force-open portal overrides (dialog/sheet/drawer/…) render fixed inset-0 overlays + popper-positioned
 // content that would cover the whole preview. Neutralize them in-scope: hide the overlays, un-fix the
 // content, and flatten radix popper/[data-side] positioning so every surface flows inline. (Ported from
@@ -49,13 +52,9 @@ type Focus =
 // selected variant/context (override-first when a components/examples/ file matches). The root carries
 // data-preview so the live-cva/slot CSS overlay reaches both sections.
 export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
-	// Demos for this component, else the legacy preview (transitional, until every component is migrated).
+	// Demos for this component, globbed from demo/<name>/ (every component is migrated).
 	const demos = DEMOS[name];
-	const entries = useMemo<Demo[]>(() => {
-		if (demos?.length) return demos;
-		const legacy = previews[name];
-		return legacy ? [{ name: "legacy", Component: () => <>{legacy()}</> }] : [];
-	}, [name, demos]);
+	const entries = useMemo<Demo[]>(() => demos ?? [], [demos]);
 
 	const slot = sel.type === "slot" ? sel.slot : null;
 	const opt = sel.type === "cva" && sel.target.kind === "option" ? sel.target : null;
@@ -149,7 +148,6 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 
 	return (
 		<div data-preview data-exploded className="flex flex-col gap-8 p-6">
-			{/* biome-ignore lint/style/useSelfClosingElements: <style> holds the neutralizer CSS text. */}
 			<style>{EXPLODED_CSS}</style>
 			<div ref={topRef} className="flex flex-wrap items-start gap-8">
 				{entries.length === 0 ? (

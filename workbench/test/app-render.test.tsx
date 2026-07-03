@@ -1,8 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { previews } from "~/components/previews";
-import { TooltipProvider } from "~/components/ui/tooltip";
 import { mockApi, renderApp } from "./harness";
 
 // React throws "Maximum update depth exceeded" on infinite loops and "Cannot read properties of
@@ -58,14 +56,4 @@ describe("routes render without runtime errors", () => {
 		await screen.findByText(/Source/);
 		expectNoCriticalLogs();
 	});
-});
-
-// Every wall preview, rendered in isolation — fast and pinpoints exactly which primitive breaks.
-describe("every preview renders without throwing", () => {
-	for (const name of Object.keys(previews)) {
-		it(name, () => {
-			expect(() => render(<TooltipProvider>{previews[name]?.()}</TooltipProvider>)).not.toThrow();
-			expectNoCriticalLogs();
-		});
-	}
 });

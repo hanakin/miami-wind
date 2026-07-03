@@ -8,7 +8,7 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
-import { previews } from "~/components/previews";
+import { demoComponentNames } from "~/components/demo-scene";
 import { SceneTabs } from "~/components/scene-tabs";
 import {
 	Select,
@@ -170,7 +170,7 @@ function ScopeSelect() {
 	const models = useWorkbench((s) => s.models);
 	const cvaNames = useMemo(() => new Set(Object.values(models).map((m) => m.name)), [models]);
 
-	const names = Object.keys(previews).sort();
+	const names = [...new Set([...demoComponentNames, ...custom])].sort();
 	const customNames = names.filter((n) => custom.has(n));
 	const withCva = names.filter((n) => !custom.has(n) && cvaNames.has(n));
 	const others = names.filter((n) => !custom.has(n) && !cvaNames.has(n));

@@ -5,17 +5,9 @@ import { cleanup, render, screen } from "@testing-library/react";
 import type { ComponentType } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { DemoScene } from "~/components/demo-scene";
-import { OpenRender, openRenders } from "~/components/open-renders";
-import { type PreviewRender, previews } from "~/components/previews";
 import { TooltipProvider } from "~/components/ui/tooltip";
 
 afterEach(cleanup);
-
-// Mounts a preview's output as a real component so React runs its full lifecycle (effects, context).
-// __root.tsx wraps the whole app in TooltipProvider, so the canvas always has it — mirror that here.
-function Mount({ render: render_ }: { render: PreviewRender }) {
-	return <TooltipProvider>{render_({})}</TooltipProvider>;
-}
 
 // Guards against a duplicate React instance: the registry's icon.tsx resolves react/iconify from
 // outside this package, so without resolve.dedupe it pulls a second React and hooks crash with
@@ -24,67 +16,6 @@ describe("render smoke", () => {
 	it("renders the registry Icon (custom primitive) without a hook-dispatcher crash", () => {
 		expect(() => render(<Icon icon="mdi:home" size={24} />)).not.toThrow();
 	});
-});
-
-// Previews are invoked as plain functions, so this catches missing providers, invalid-hook usage,
-// and bad props for every entry — the single source of truth for the picker and the live preview.
-describe("every preview mounts", () => {
-	for (const [name, render_] of Object.entries(previews)) {
-		it(name, () => {
-			expect(() => {
-				const { unmount } = render(<Mount render={render_} />);
-				unmount();
-			}).not.toThrow();
-		});
-	}
-});
-
-// The exploded render must redirect portal surfaces into [data-preview] (not document.body), so the
-// inspector can target them and live-css can paint them. Proves the dropdown's hidden menu + item
-// render in-scope with their data-slots — the foundation of editing hidden surfaces.
-describe("exploded surfaces render in-scope", () => {
-	// Each case redirects a portal-backed primitive into [data-preview] and asserts its content slot
-	// (the surface the inspector targets) lands there with at least one inner sub-part.
-	const cases: Array<[name: string, contentSlot: string, innerSlot: string]> = [
-		["dropdown-menu", "dropdown-menu-content", "dropdown-menu-item"],
-		["select", "select-content", "select-item"],
-		["popover", "popover-content", "popover-trigger"],
-		["dialog", "dialog-content", "dialog-title"],
-		["drawer", "drawer-content", "drawer-title"],
-	];
-	for (const [name, contentSlot, innerSlot] of cases) {
-		it(`${name} exposes its content + sub-part slots inside [data-preview]`, () => {
-			const { container } = render(
-				<TooltipProvider>
-					<div data-preview>
-						<OpenRender name={name} />
-					</div>
-				</TooltipProvider>,
-			);
-			const slots = [...container.querySelectorAll("[data-preview] [data-slot]")].map((e) =>
-				e.getAttribute("data-slot"),
-			);
-			expect(slots).toContain(contentSlot);
-			expect(slots).toContain(innerSlot);
-		});
-	}
-
-	// Every exploded render must mount cleanly — catches missing primitive context (e.g. a sub-part
-	// rendered outside its required Group/Provider) for the whole set, not just the asserted few.
-	for (const name of Object.keys(openRenders)) {
-		it(`${name} mounts without throwing`, () => {
-			expect(() => {
-				const { unmount } = render(
-					<TooltipProvider>
-						<div data-preview>
-							<OpenRender name={name} />
-						</div>
-					</TooltipProvider>,
-				);
-				unmount();
-			}).not.toThrow();
-		});
-	}
 });
 
 // Every demo file the scene globs must mount without throwing — the mechanical gate for the rollout.
@@ -136,6 +67,28 @@ describe("every override mounts", () => {
 			}).not.toThrow();
 		});
 	}
+});
+
+// A portal override force-opens its hidden surface in-scope (the examples/ path that replaced the legacy
+// exploded-surfaces test): the dropdown-menu content + item slots must land inside [data-preview].
+describe("portal override exposes hidden slots", () => {
+	it("dropdown-menu content + item render in [data-preview]", () => {
+		const mod = overrideFiles["../src/components/examples/dropdown-menu/_open.tsx"];
+		const Open = Object.values((mod ?? {}) as Record<string, unknown>).find(
+			(v): v is ComponentType => typeof v === "function",
+		);
+		expect(Open).toBeDefined();
+		const { container } = render(
+			<TooltipProvider>
+				<div data-preview>{Open ? <Open /> : null}</div>
+			</TooltipProvider>,
+		);
+		const slots = [...container.querySelectorAll("[data-preview] [data-slot]")].map((e) =>
+			e.getAttribute("data-slot"),
+		);
+		expect(slots).toContain("dropdown-menu-content");
+		expect(slots).toContain("dropdown-menu-item");
+	});
 });
 
 // The demo scene globs each component's demos (no registration) and derives the focused filter: a slot
