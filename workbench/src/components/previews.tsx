@@ -122,7 +122,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
-import { Separator } from "~/components/ui/separator";
 import { Sheet, SheetTrigger } from "~/components/ui/sheet";
 import {
 	Sidebar,
@@ -570,13 +569,6 @@ export const previews: Record<string, PreviewRender> = {
 				<SelectItem value="b">Banana</SelectItem>
 			</SelectContent>
 		</Select>
-	),
-	separator: () => (
-		<div className="w-56 text-sm text-subtext0">
-			Above
-			<Separator className="my-2" />
-			Below
-		</div>
 	),
 	sheet: () => (
 		<Sheet>

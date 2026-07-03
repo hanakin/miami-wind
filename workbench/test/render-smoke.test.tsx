@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
+
 import { Icon } from "@registry-ui/icon";
 import { cleanup, render, screen } from "@testing-library/react";
+import type { ComponentType } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { DemoScene } from "~/components/demo-scene";
 import { OpenRender, openRenders } from "~/components/open-renders";
@@ -77,6 +79,30 @@ describe("exploded surfaces render in-scope", () => {
 						<div data-preview>
 							<OpenRender name={name} />
 						</div>
+					</TooltipProvider>,
+				);
+				unmount();
+			}).not.toThrow();
+		});
+	}
+});
+
+// Every demo file the scene globs must mount without throwing — the mechanical gate for the rollout.
+// Mirrors demo-scene.tsx's glob, so dropping a new demo/<component>/<file>.tsx auto-covers it here.
+const demoFiles = import.meta.glob("../src/components/demo/*/*.tsx", { eager: true });
+describe("every demo mounts", () => {
+	for (const [path, mod] of Object.entries(demoFiles)) {
+		const m = path.match(/\/demo\/([^/]+)\/([^/]+)\.tsx$/);
+		if (!m) continue;
+		const Component = Object.values(mod as Record<string, unknown>).find(
+			(v): v is ComponentType => typeof v === "function",
+		);
+		it(`${m[1]}/${m[2]}`, () => {
+			expect(Component).toBeDefined();
+			expect(() => {
+				const { unmount } = render(
+					<TooltipProvider>
+						<div data-preview>{Component ? <Component /> : null}</div>
 					</TooltipProvider>,
 				);
 				unmount();
