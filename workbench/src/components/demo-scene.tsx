@@ -31,6 +31,13 @@ function byComponent(modules: Record<string, unknown>): Record<string, Demo[]> {
 const DEMOS = byComponent(demoModules);
 const OVERRIDES = byComponent(overrideModules);
 
+// Force-open portal overrides (dialog/sheet/drawer/…) render fixed inset-0 overlays + popper-positioned
+// content that would cover the whole preview. Neutralize them in-scope: hide the overlays, un-fix the
+// content, and flatten radix popper/[data-side] positioning so every surface flows inline. (Ported from
+// the legacy open-renders.tsx OpenRender wrapper.)
+const EXPLODED_CSS =
+	"[data-exploded] [data-radix-popper-content-wrapper]{position:static!important;transform:none!important;inset:auto!important;min-width:0!important;}[data-exploded] [data-slot=dialog-overlay],[data-exploded] [data-slot=alert-dialog-overlay],[data-exploded] [data-slot=sheet-overlay],[data-exploded] [data-slot=drawer-overlay]{display:none!important;}[data-exploded] [data-slot=dialog-content],[data-exploded] [data-slot=alert-dialog-content],[data-exploded] [data-slot=sheet-content],[data-exploded] [data-slot=drawer-content]{position:static!important;transform:none!important;inset:auto!important;}[data-exploded] [data-slot=combobox-content]{position:static!important;transform:none!important;}[data-exploded] [data-side]{position:static!important;transform:none!important;inset:auto!important;}";
+
 type Focus =
 	| { kind: "slot"; html: string; from: string }
 	| { kind: "demo"; name: string }
@@ -141,7 +148,9 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 	}, [name, extractSelector, extractFallback, filterKey, deriveSelector, deriveFallback]);
 
 	return (
-		<div data-preview className="flex flex-col gap-8 p-6">
+		<div data-preview data-exploded className="flex flex-col gap-8 p-6">
+			{/* biome-ignore lint/style/useSelfClosingElements: <style> holds the neutralizer CSS text. */}
+			<style>{EXPLODED_CSS}</style>
 			<div ref={topRef} className="flex flex-wrap items-start gap-8">
 				{entries.length === 0 ? (
 					<p className="text-sm text-subtext0">No demos for {name} yet.</p>
