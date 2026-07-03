@@ -182,18 +182,26 @@ function renderFocus(focus: Focus, name: string, entries: Demo[]): ReactNode {
 	}
 	if (focus.kind === "demo") {
 		const d = entries.find((e) => e.name === focus.name);
-		return d ? <d.Component /> : null;
+		return d ? (
+			<div className="flex flex-wrap items-start gap-5">
+				<d.Component />
+			</div>
+		) : null;
 	}
 	if (focus.kind === "override") {
 		const o = OVERRIDES[name]?.find((e) => e.name === focus.name);
-		return o ? <o.Component /> : null;
+		return o ? (
+			<div className="flex flex-wrap items-start gap-5">
+				<o.Component />
+			</div>
+		) : null;
 	}
 	return <p className="text-sm text-subtext0">Not present in these demos.</p>;
 }
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
 	return (
-		<div className="flex flex-col gap-2">
+		<div className="flex flex-col items-start gap-2">
 			<span className="text-xs font-medium uppercase tracking-wide text-subtext0">{label}</span>
 			{children}
 		</div>
