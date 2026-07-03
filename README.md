@@ -403,8 +403,8 @@ The `grey-50 … grey-1300` ramp (light → dark). Full data in `pallette.json`.
 ## Registry (shadcn)
 
 This repo is also a **shadcn source registry**. Beyond the palette above, it distributes — via
-`bunx shadcn add @miami-wind/*` — everything that makes an app a "Miami Wind" app, and is the single
-source of truth for it.
+`bunx shadcn add hanakin/miami-wind/<item>` (the GitHub `owner/repo/item` flow, **no build, no host**) —
+everything that makes an app a "Miami Wind" app, and is the single source of truth for it.
 
 It ships **only what shadcn doesn't already give you**:
 
@@ -427,12 +427,18 @@ customized past its cva, which becomes a full custom component you then own.
 
 ### Use it
 
+No `components.json` `registries` entry and **no build** — `owner/repo/item` is a direct GitHub address.
+The CLI reads this repo's root `registry.json` and installs each item's files straight from the repo:
+
 ```sh
-bunx shadcn@latest add @miami-wind/registry   # conventions + theme + mw-cva + icon + button cva
+bunx shadcn@latest add hanakin/miami-wind/registry   # everything (aggregate)
+bunx shadcn@latest add hanakin/miami-wind/button     # a single item
 ```
 
-Add the vanilla shadcn components separately (e.g. `bunx shadcn@latest add button`); the `@miami-wind`
-cva customizes them, wired by `mw-cva` in your `vite.config.ts`:
+Optionally pin a tag or commit SHA for reproducibility: `hanakin/miami-wind/registry#<tag-or-sha>`.
+
+Add the vanilla shadcn components you customize separately (e.g. `bunx shadcn@latest add button`); the
+Miami Wind cva customizes them, wired by `mw-cva` in your `vite.config.ts`:
 
 ```ts
 import { mwCva } from "./mw-cva";
@@ -441,22 +447,6 @@ export default defineConfig({ plugins: [mwCva(), react()] });
 
 The theme is **authored** in `registry.json` (dark-only, layered); `pallette.json` is the canonical
 palette reference (and feeds the editor-theme repos) — it does not generate the theme.
-
-### Build & serve
-
-`registry.json` is the source of truth; compile it to the per-item JSON that `shadcn add` fetches, then
-host `public/r/` on any static origin:
-
-```sh
-bun run registry:build     # shadcn build → public/r/<name>.json
-bun run registry:serve     # static-serve public/ locally
-```
-
-Point a consumer's `components.json` at the hosted output so `@miami-wind/*` resolves:
-
-```json
-{ "registries": { "@miami-wind": "https://<host>/r/{name}.json" } }
-```
 
 ### Develop
 

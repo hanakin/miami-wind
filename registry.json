@@ -177,8 +177,8 @@
 			"title": "Button variants (cva)",
 			"description": "Miami Wind button variants. The shadcn button component is vanilla (from shadcn's own registry); this ships only the cva layer. Pink primary, cyan secondary, error destructive; pointer cursor, visible hover/active, no ring.",
 			"registryDependencies": [
-				"theme",
-				"mw-cva"
+				"hanakin/miami-wind/theme",
+				"hanakin/miami-wind/mw-cva"
 			],
 			"dependencies": [
 				"class-variance-authority"
@@ -195,15 +195,15 @@
 			"name": "registry",
 			"type": "registry:item",
 			"title": "Miami Wind (all)",
-			"description": "Aggregate: installs the whole Miami Wind set — conventions, theme, mw-cva, utils, and every primitive. This is what the scaffolder's bin runs.",
+			"description": "Aggregate: installs the whole Miami Wind set — conventions, theme, mw-cva, icon, button (cva), command, and dropdown-menu. This is what the scaffolder's bin runs.",
 			"registryDependencies": [
-				"conventions",
-				"theme",
-				"mw-cva",
-				"icon",
-				"button",
-				"command",
-				"dropdown-menu"
+				"hanakin/miami-wind/conventions",
+				"hanakin/miami-wind/theme",
+				"hanakin/miami-wind/mw-cva",
+				"hanakin/miami-wind/icon",
+				"hanakin/miami-wind/button",
+				"hanakin/miami-wind/command",
+				"hanakin/miami-wind/dropdown-menu"
 			]
 		},
 		{
@@ -212,7 +212,7 @@
 			"title": "Command",
 			"description": "Miami Wind command — customized primitive (full source).",
 			"registryDependencies": [
-				"theme"
+				"hanakin/miami-wind/theme"
 			],
 			"files": [
 				{
@@ -232,7 +232,7 @@
 			"title": "Dropdown Menu",
 			"description": "Miami Wind dropdown-menu — customized primitive (full source).",
 			"registryDependencies": [
-				"theme"
+				"hanakin/miami-wind/theme"
 			],
 			"files": [
 				{
