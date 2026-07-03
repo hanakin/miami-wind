@@ -10,9 +10,7 @@
 		"check": "biome check . && bun run typecheck",
 		"fmt": "biome check --write .",
 		"lint": "biome lint .",
-		"typecheck": "tsc --noEmit",
-		"registry:build": "shadcn build",
-		"registry:serve": "bunx --bun serve public"
+		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.0.0",
