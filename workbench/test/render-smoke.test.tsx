@@ -111,6 +111,33 @@ describe("every demo mounts", () => {
 	}
 });
 
+// Every examples/ override must mount without throwing (force-open portal renders). Dedupe by component
+// identity so the per-slot re-export files don't re-mount the same force-open render N times.
+const overrideFiles = import.meta.glob("../src/components/examples/*/*.tsx", { eager: true });
+describe("every override mounts", () => {
+	const seen = new Set<unknown>();
+	for (const [path, mod] of Object.entries(overrideFiles)) {
+		const Component = Object.values(mod as Record<string, unknown>).find(
+			(v): v is ComponentType => typeof v === "function",
+		);
+		if (!Component || seen.has(Component)) continue;
+		seen.add(Component);
+		const m = path.match(/\/examples\/([^/]+)\/([^/]+)\.tsx$/);
+		it(`${m?.[1] ?? ""}/${m?.[2] ?? path}`, () => {
+			expect(() => {
+				const { unmount } = render(
+					<TooltipProvider>
+						<div data-preview>
+							<Component />
+						</div>
+					</TooltipProvider>,
+				);
+				unmount();
+			}).not.toThrow();
+		});
+	}
+});
+
 // The demo scene globs each component's demos (no registration) and derives the focused filter: a slot
 // extracts its single default instance; a variant/context resolves the whole demo that represents it.
 describe("DemoScene", () => {
