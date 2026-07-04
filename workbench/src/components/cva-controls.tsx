@@ -21,7 +21,7 @@ import {
 	targetClass,
 } from "~/utils/cva-edit";
 import type { Selection } from "~/utils/editor-selection";
-import { slotForCva } from "~/utils/live-css";
+import { cssForForced, slotForCva } from "~/utils/live-css";
 import { parseClasses, sizeMatch } from "~/utils/tw-tokens";
 import type { CvaModel } from "../../server/lib/cva-codec";
 
@@ -53,6 +53,36 @@ function cvaContexts(m: CvaModel) {
 	return out;
 }
 
+// The forced-state CSS rule for the focused target: paint its selected state's look (checked / active /
+// hover) unconditionally in the preview so you SEE it without the element being in that state. Reads
+// live classes from the store so it stays correct as you edit.
+function forcedRuleFor(sel: Selection, name: string, state: string): string {
+	if (!state) return "";
+	const st = workbenchStore.getState();
+	if (sel.type === "slot") {
+		const surf = parseSurface(sel.slot);
+		const selector = surf ? `.rdp-${surf.key}` : `[data-slot="${sel.slot}"]`;
+		return cssForForced(selector, st.slots[sel.slot] ?? "", state);
+	}
+	const t = sel.target;
+	if (t.kind === "context") return ""; // context targets ([a]/[&_svg]) aren't states
+	const model =
+		Object.values(st.models).find((m) => m.exportName === t.symbol) ??
+		Object.values(st.models).find(
+			(m) => m.name === name && (m.base.trim() !== "" || Object.keys(m.variants).length > 0),
+		);
+	if (!model) return "";
+	const slot = slotForCva(model.exportName);
+	if (t.kind === "option") {
+		return cssForForced(
+			`[data-slot="${slot}"][data-${t.axis}="${t.option}"]`,
+			model.variants[t.axis]?.[t.option] ?? "",
+			state,
+		);
+	}
+	return cssForForced(`[data-slot="${slot}"]`, model.base, state);
+}
+
 export function CvaControls({
 	name,
 	sel,
@@ -62,6 +92,30 @@ export function CvaControls({
 	sel: Selection;
 	onSel: (sel: Selection) => void;
 }) {
+	const [state, setState] = useState("");
+	// Reset to Base when the target changes — a new target carries different states.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on target change, not on edits
+	useEffect(() => setState(""), [sel]);
+	// Forced-state preview: a scoped <style> that paints the selected state's look on the focused target,
+	// repainted on every store change so it stays live as you edit that state's classes.
+	useEffect(() => {
+		let style = document.getElementById("forced-state") as HTMLStyleElement | null;
+		if (!style) {
+			style = document.createElement("style");
+			style.id = "forced-state";
+			document.head.appendChild(style);
+		}
+		const el = style;
+		const paint = () => {
+			el.textContent = forcedRuleFor(sel, name, state);
+		};
+		paint();
+		const unsub = workbenchStore.subscribe(paint);
+		return () => {
+			unsub();
+			el.remove();
+		};
+	}, [sel, name, state]);
 	const anyModel = useComponentModel(name);
 	const modelsMap = useWorkbench((s) => s.models);
 	// Working classes for the selected surface, read live from the store (empty until first edit).
@@ -236,6 +290,8 @@ export function CvaControls({
 				inherited={inherited}
 				onChange={onChange}
 				context={sel.type === "cva" && sel.target.kind === "context" ? sel.target.prefix : ""}
+				state={state}
+				onStateChange={setState}
 			/>
 
 			{hasCva && model && (

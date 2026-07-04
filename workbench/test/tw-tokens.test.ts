@@ -12,6 +12,9 @@ import {
 	readEffectiveColor,
 	removeRaw,
 	setColorTokens,
+	stateLabel,
+	statePart,
+	statesIn,
 	swatchVar,
 	tokenUtil,
 } from "~/utils/tw-tokens";
@@ -30,6 +33,43 @@ describe("tw-tokens", () => {
 			state: "[&_svg:not([class*='size-'])]:",
 			utility: "size-4",
 		});
+	});
+
+	it("recognizes attribute-state prefixes as states (data-/aria-/group-), not base", () => {
+		const s = parseClasses(
+			"data-[state=checked]:bg-primary aria-[selected]:underline group-data-[state=open]:rotate-180",
+		);
+		expect(s.map((t) => t.state)).toEqual([
+			"data-[state=checked]:",
+			"aria-[selected]:",
+			"group-data-[state=open]:",
+		]);
+		expect(s[0]?.utility).toBe("bg-primary");
+	});
+
+	it("leaves an arbitrary VALUE (no trailing colon) as a base utility", () => {
+		expect(parseClasses("text-[0.8rem] bg-[#fff]").map((t) => t.state)).toEqual(["", ""]);
+	});
+
+	it("statesIn derives the states present; statePart strips context", () => {
+		expect(statePart("[&_svg]:hover:")).toBe("hover:");
+		const states = statesIn("rounded-md hover:bg-accent data-[state=checked]:bg-primary");
+		expect(states).toEqual(["hover:", "data-[state=checked]:"]);
+	});
+
+	it("stateLabel reads real states", () => {
+		expect(stateLabel("")).toBe("Base");
+		expect(stateLabel("hover:")).toBe("Hover");
+		expect(stateLabel("data-[state=checked]:")).toBe("Checked");
+		expect(stateLabel("data-[state=open]:")).toBe("Open");
+		expect(stateLabel("aria-[selected]:")).toBe("Selected");
+		expect(stateLabel("data-[selected=true]:")).toBe("Selected");
+		expect(stateLabel("aria-invalid:")).toBe("Invalid");
+	});
+
+	it("statesIn skips environment variants (dark/responsive) — theme editor's domain", () => {
+		const states = statesIn("bg-input dark:bg-input/30 data-[state=checked]:bg-primary md:p-4");
+		expect(states).toEqual(["data-[state=checked]:"]); // no dark:, no md:
 	});
 
 	it("parses and serializes color utilities with opacity", () => {

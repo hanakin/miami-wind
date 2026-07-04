@@ -1,6 +1,6 @@
 import { parseSurface } from "~/stores/workbench";
 import type { CvaModel } from "../../server/lib/cva-codec";
-import { parseClasses, parseColor, swatchVar } from "./tw-tokens";
+import { flattenState, parseClasses, parseColor, swatchVar } from "./tw-tokens";
 
 // Live preview without Tailwind. Tailwind only generates classes it finds in source at build
 // time, so a class the inspector creates at runtime (bg-primary/73, a freshly typed utility)
@@ -189,6 +189,13 @@ export function cssForModels(models: Record<string, CvaModel>): string {
 // the same `[data-preview] [data-slot=…]` rules the cva path uses, so a slot edit paints BEFORE Save —
 // exactly like a cva edit — instead of waiting on the Save-triggered HMR. Mirrors cssForModels; append
 // it after so an explicit slot edit wins over a cva rule on the same element.
+/** A forced-state rule: apply `state`'s look (its inspector-resolvable utilities, unguarded) to
+ *  `selector` in the preview — so you SEE hover / checked / active without the element being in it. */
+export function cssForForced(selector: string, classes: string, state: string): string {
+	const decls = declsFor(flattenState(classes, state).split(/\s+/).filter(Boolean));
+	return decls ? `${SCOPE}${selector} { ${decls} }` : "";
+}
+
 export function cssForSlots(slots: Record<string, string>): string {
 	return Object.entries(slots)
 		.flatMap(([id, classes]) => {

@@ -2,23 +2,20 @@
 // CSS properties per interaction state and write valid Tailwind back. Anything the structured
 // controls don't cover stays reachable as raw chips — so all of CSS remains editable.
 
-export const STATES = [
-	{ key: "", label: "Base" },
-	{ key: "hover:", label: "Hover" },
-	{ key: "focus-visible:", label: "Focus" },
-	{ key: "active:", label: "Active" },
-	{ key: "disabled:", label: "Disabled" },
-] as const;
-
 export interface Token {
 	raw: string;
 	state: string;
 	utility: string;
 }
 
-// State/context prefixes: plain (`hover:`) or arbitrary-selector (`[a]:`, `[&_svg]:`), one level of
-// bracket nesting allowed so `[&_svg:not([class*='size-'])]:` tokenizes as a single prefix.
-const PREFIX_RE = /^((?:[a-zA-Z0-9-]+:|\[(?:[^[\]]|\[[^\]]*\])*\]:)+)/;
+// State/context prefixes, one or more chained. A segment is:
+//   • a plain word variant — `hover:`, `disabled:`, `peer-checked:`
+//   • a word+bracket attribute-state — `data-[state=checked]:`, `aria-[selected]:`, `group-data-[state=open]:`
+//   • an arbitrary-selector context — `[a]:`, `[&_svg:not([class*='size-'])]:` (one level of nesting)
+// The word+bracket form is what makes real component states (data-/aria-/group-/peer-) first-class
+// instead of being swallowed into the base utility. An arbitrary VALUE (`bg-[#fff]`, `text-[0.8rem]`)
+// has no trailing colon, so it never matches — it stays a utility.
+const PREFIX_RE = /^((?:[a-zA-Z0-9-]+(?:\[[^\]]*\])?:|\[(?:[^[\]]|\[[^\]]*\])*\]:)+)/;
 
 export function splitClass(raw: string): Token {
 	const m = raw.match(PREFIX_RE);
@@ -32,6 +29,85 @@ export function parseClasses(value: string): Token[] {
 
 export function buildClasses(tokens: Token[]): string {
 	return tokens.map((t) => t.raw).join(" ");
+}
+
+// One prefix is a chain of these segments. A bracket-only segment (`[a]:`, `[&_svg]:`) is a *context*
+// (it re-targets a descendant/element); a word or word+bracket segment (`hover:`, `data-[state=open]:`)
+// is a *state*. The State dropdown offers states; contexts come from the selection.
+const SEGMENT_RE = /[a-zA-Z0-9-]+(?:\[[^\]]*\])?:|\[(?:[^[\]]|\[[^\]]*\])*\]:/g;
+
+/** The state chain of a prefix — its non-context segments (`[&_svg]:hover:` → `hover:`). */
+export function statePart(prefix: string): string {
+	return (prefix.match(SEGMENT_RE) ?? []).filter((s) => !s.startsWith("[")).join("");
+}
+
+// Not component interaction states, so the State dropdown skips them (they stay editable as raw chips):
+//   • environment/mode variants (dark:, responsive) — the theme editor owns those
+//   • pseudo-elements (after:, placeholder:) — they aren't a state, and can't be "forced" on the element
+const NON_STATE_PREFIXES = [
+	"dark:",
+	"light:",
+	"print:",
+	"rtl:",
+	"ltr:",
+	"sm:",
+	"md:",
+	"lg:",
+	"xl:",
+	"2xl:",
+	"motion-reduce:",
+	"motion-safe:",
+	"contrast-more:",
+	"contrast-less:",
+	"portrait:",
+	"landscape:",
+	"forced-colors:",
+	"before:",
+	"after:",
+	"placeholder:",
+	"selection:",
+	"first-line:",
+	"first-letter:",
+	"marker:",
+	"file:",
+	"backdrop:",
+	"details-content:",
+];
+
+/** Every distinct component state present in a class string — derived, not a fixed list (checkbox → checked, …). */
+export function statesIn(value: string): string[] {
+	const set = new Set<string>();
+	for (const t of parseClasses(value)) {
+		const sp = statePart(t.state);
+		if (sp && !NON_STATE_PREFIXES.some((v) => sp.startsWith(v))) set.add(sp);
+	}
+	return [...set];
+}
+
+const PSEUDO_LABEL: Record<string, string> = {
+	"hover:": "Hover",
+	"focus-visible:": "Focus",
+	"focus:": "Focus",
+	"active:": "Active",
+	"disabled:": "Disabled",
+};
+
+/** A readable label for a state prefix: `data-[state=checked]:` → "Checked", `aria-[selected]:` → "Selected". */
+export function stateLabel(state: string): string {
+	if (!state) return "Base";
+	if (PSEUDO_LABEL[state]) return PSEUDO_LABEL[state];
+	// Attribute state: prefer the value (checked/open/active), but the key for booleans (selected=true).
+	const m = state.match(/\[([a-z-]+)(?:=["']?([a-z0-9-]+)["']?)?\]/i);
+	if (m) {
+		const pick = (!m[2] || m[2] === "true" || m[2] === "false" ? m[1] : m[2]) ?? "";
+		const clean = pick.replace(/^(state|data|aria)-?/, "").replace(/-/g, " ");
+		return clean.charAt(0).toUpperCase() + clean.slice(1);
+	}
+	return state
+		.replace(/:$/, "")
+		.replace(/^(aria|data|group|peer)-/, "")
+		.replace(/-/g, " ")
+		.replace(/^./, (c) => c.toUpperCase());
 }
 
 /** Promote one state's prefixed utilities to base (strip the prefix) — for forced-state previews. */

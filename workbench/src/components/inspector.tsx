@@ -20,8 +20,9 @@ import {
 	parseClasses,
 	readEffectiveColor,
 	removeRaw,
-	STATES,
 	sizeMatch,
+	stateLabel,
+	statesIn,
 	swatchVar,
 } from "~/utils/tw-tokens";
 
@@ -83,6 +84,8 @@ export function Inspector({
 	inherited = "",
 	onChange,
 	context = "",
+	state,
+	onStateChange,
 }: {
 	value: string;
 	/** Classes beneath the edited target (e.g. cva base when editing a variant) — for showing inherited colors. */
@@ -90,24 +93,42 @@ export function Inspector({
 	onChange: (v: string) => void;
 	/** A pass-through selector prefix (e.g. `[a]:`) so every control edits that context's utilities. */
 	context?: string;
+	/** The selected interaction state (`hover:`, `data-[state=checked]:`, …). Lifted so the preview can force it. */
+	state: string;
+	onStateChange: (s: string) => void;
 }) {
-	const [state, setState] = useState("");
 	// Everything the controls read/write is scoped to context + interaction state, e.g. `[a]:hover:`.
 	const fullState = context + state;
 	const set = (match: (u: string) => boolean, util: string | null) =>
 		onChange(applyUtility(value, fullState, match, util));
 
+	// States aren't a fixed list — derive them from the target's real classes so every component's own
+	// states surface (checkbox → checked, tabs → active, accordion → open, …). Common pseudos are also
+	// offered (to add one that doesn't exist yet), but a REAL state owns its label — so tabs' selected
+	// `data-[state=active]` wins "Active" over the `active:` pseudo instead of showing twice.
+	const stateKeys = useMemo(() => {
+		const reals = [...new Set([...statesIn(value), ...statesIn(inherited)])];
+		const owned = new Set(reals.map(stateLabel));
+		const pseudos = ["hover:", "focus-visible:", "active:", "disabled:"].filter(
+			(k) => !owned.has(stateLabel(k)),
+		);
+		return ["", ...pseudos, ...reals];
+	}, [value, inherited]);
+
 	return (
 		<div className="flex flex-col gap-4">
 			<Field label="State">
-				<Select value={state || "__base"} onValueChange={(v) => setState(v === "__base" ? "" : v)}>
+				<Select
+					value={state || "__base"}
+					onValueChange={(v) => onStateChange(v === "__base" ? "" : v)}
+				>
 					<SelectTrigger className="h-8">
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
-						{STATES.map((s) => (
-							<SelectItem key={s.key || "__base"} value={s.key || "__base"}>
-								{s.label}
+						{stateKeys.map((k) => (
+							<SelectItem key={k || "__base"} value={k || "__base"}>
+								{stateLabel(k)}
 							</SelectItem>
 						))}
 					</SelectContent>
