@@ -1,6 +1,8 @@
 node_modules/
 /public/
 .DS_Store
+docs/
 
 # SDD orchestration scratch (ledger, agent rule files)
 .superpowers/
+tmp/
