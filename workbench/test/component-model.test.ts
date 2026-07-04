@@ -109,6 +109,14 @@ describe("component-model — interactions (derived from real classes, per piece
 		expect(addable(dm, "dropdown-menu-item")).toEqual(expect.arrayContaining(["hover", "active"]));
 	});
 
+	it("scoped states attribute to their scope, not the plain piece: the destructive-variant focus is not in the plain item's focus classes", () => {
+		// dropdown item's plain focus is `focus:bg-accent`; `data-[variant=destructive]:focus:…` is the
+		// destructive variant's focus — it belongs to that variant, so it stays out of the plain classes.
+		const focus = dm.classesByPieceState["dropdown-menu-item"]?.focus ?? "";
+		expect(focus).toContain("focus:bg-accent");
+		expect(focus).not.toContain("data-[variant=destructive]");
+	});
+
 	it("dropdown checkbox-item: focus·disabled real; NO checked (its check is an ItemIndicator, not an editable class)", () => {
 		const p = present(dm, "dropdown-menu-checkbox-item");
 		expect(p).toEqual(expect.arrayContaining(["default", "focus", "disabled"]));
@@ -132,12 +140,16 @@ describe("component-model — interactions (derived from real classes, per piece
 		expect(addable(dm, "dropdown-menu-trigger")).toContain("active");
 	});
 
-	it("item root: focus-visible (ring) is real; core states offered to Add", () => {
+	it("item root: focus-visible (ring) is the only real state — the [a]:hover: belongs to the as-link flag, not the plain item", () => {
 		const p = present(item, "item");
-		expect(p).toContain("focus-visible");
+		expect(p).toEqual(["default", "focus-visible"]);
+		expect(p).not.toContain("hover"); // [a]:hover:bg-accent/50 is scoped to the link, surfaced via `as link`
 		expect(item.classesByPieceState.item?.["focus-visible"]).toContain(
 			"focus-visible:ring-ring/50",
 		);
-		expect(addable(item, "item")).toEqual(expect.arrayContaining(["focus", "active", "disabled"]));
+		// hover is now a core Add offer (no longer wrongly present); visited too, since item can be a link.
+		expect(addable(item, "item")).toEqual(
+			expect.arrayContaining(["hover", "focus", "active", "disabled", "visited"]),
+		);
 	});
 });

@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 // tw-tokens is pure prefix-parsing (no React/DOM) — reuse its class/state splitter so the reader and
 // the client's controls agree on what a "state" is, instead of a second, drifting regex here.
-import { parseClasses, statePart } from "../../src/utils/tw-tokens";
+import { parseClasses } from "../../src/utils/tw-tokens";
 import { readSlots } from "./tsx-slots";
 
 /**
@@ -152,14 +152,30 @@ function isStructure(name: string, slot: string): boolean {
 // className). This is where the hover-vs-`focus:` bug dies: the "this piece highlights on `focus:`"
 // mapping is computed ONCE from the real file, not guessed per click.
 
-/** A single state segment (contexts like `[&_svg]:` already stripped by tw-tokens' statePart). */
-const STATE_SEGMENT = /[a-zA-Z0-9-]+(?:\[[^\]]*\])?:/g;
+/** One prefix segment: a word/word+bracket state (`hover:`, `data-[state=open]:`) OR a bracket-only
+ *  arbitrary-selector context (`[a]:`, `[&_svg]:`). We keep the contexts here (unlike tw-tokens'
+ *  statePart, which drops them) — because a context/variant scope is exactly what re-attributes a
+ *  state away from the plain piece. */
+const SEGMENT = /[a-zA-Z0-9-]+(?:\[[^\]]*\])?:|\[(?:[^[\]]|\[[^\]]*\])*\]:/g;
 /** Core states offered to Add on any element; +visited for links. Others show only when present. */
 const CORE = ["hover", "focus", "active", "disabled"] as const;
 /** A utility that only animates — a state made entirely of these carries nothing the controls edit. */
 const ANIM = /^(animate-|fade-(in|out)|zoom-(in|out)|slide-(in|out)|spin$|pulse$|bounce$|ping$)/;
 
-/** The plain interaction a single state segment maps to, or null if it isn't one (variant/env/side). */
+/** True when a segment SCOPES the class to a flag/variant/context (`[a]:`, `data-[variant=…]:`,
+ *  `data-[inset]:`, `data-[size=…]:`) rather than to an interaction. A scoped state belongs to that
+ *  flag/variant, never the plain piece — so its hover/focus is surfaced only when you select it. */
+function isScope(seg: string): boolean {
+	if (seg.startsWith("[")) return true; // arbitrary-selector context: [a]: (as link), [&_svg]: (icon)
+	const m = seg
+		.replace(/:$/, "")
+		.match(/^(?:group-|peer-)?(?:data|aria)-\[([a-z-]+)(?:=[a-z0-9-]+)?\]$/);
+	if (!m) return false; // a pseudo (hover:) or an env word (dark:, sm:) — not a scope
+	const key = m[1];
+	return !(key === "state" || key === "disabled" || key === "checked" || key === "selected");
+}
+
+/** The interaction a single (non-scope) segment maps to, or null if it isn't one. */
 function segmentInteraction(seg: string): string | null {
 	const s = seg.replace(/:$/, "");
 	if (s === "hover" || s === "focus" || s === "focus-visible") return s;
@@ -173,16 +189,17 @@ function segmentInteraction(seg: string): string | null {
 		if (val === "selected") return "selected";
 		return null; // closed / indeterminate / … — transient, nothing steady to edit
 	}
-	if (key === "disabled") return "disabled";
-	if (key === "checked") return "checked";
-	if (key === "selected") return "selected";
-	return null; // variant / side / align / inset / size / orientation / slot — not an interaction
+	if (key === "disabled" || key === "checked" || key === "selected") return key;
+	return null;
 }
 
-/** The interaction a whole state-prefix chain belongs to: its first interaction segment (a
- *  `data-[variant=x]:focus:` class is a focus edit), or null when the chain is purely variant/env. */
-function chainInteraction(chain: string): string | null {
-	for (const seg of chain.match(STATE_SEGMENT) ?? []) {
+/** Which interaction a plain (unscoped) class belongs to: `""` chain → default; a scoped chain → null
+ *  (owned by a flag/variant); else its first interaction segment, or null for pure env (dark:, sm:). */
+function classInteraction(state: string): string | null {
+	if (state === "") return "default";
+	const segs = state.match(SEGMENT) ?? [];
+	if (segs.some(isScope)) return null; // attributed to the flag/variant/context, not the plain piece
+	for (const seg of segs) {
 		const i = segmentInteraction(seg);
 		if (i) return i;
 	}
@@ -196,9 +213,8 @@ function deriveInteractions(
 ): { interactions: Interaction[]; classesByState: Record<string, string> } {
 	const groups: Record<string, string[]> = {};
 	for (const t of parseClasses(own)) {
-		const chain = statePart(t.state); // contexts ([a]:, [&_svg]:) already dropped
-		const which = chain === "" ? "default" : chainInteraction(chain);
-		if (which === null) continue; // a variant/env-only class — edited elsewhere, not a resting state
+		const which = classInteraction(t.state);
+		if (which === null) continue; // scoped by a flag/variant/context, or pure env — not a plain state
 		const group = groups[which] ?? [];
 		group.push(t.raw);
 		groups[which] = group;
