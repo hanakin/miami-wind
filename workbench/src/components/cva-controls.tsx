@@ -1,16 +1,8 @@
 import { Icon } from "@registry-ui/icon";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { EditingMenu } from "~/components/editing-menu";
 import { Inspector } from "~/components/inspector";
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectLabel,
-	SelectTrigger,
-	SelectValue,
-} from "~/components/ui/select";
-import { LABEL_CONTROLS, useComponentModel } from "~/hooks/use-workbench-data";
+import { useComponentModel } from "~/hooks/use-workbench-data";
 import { parseSurface, useWorkbench, workbenchStore } from "~/stores/workbench";
 import {
 	addAxis,
@@ -22,36 +14,7 @@ import {
 } from "~/utils/cva-edit";
 import type { Selection } from "~/utils/editor-selection";
 import { cssForForced, slotForCva } from "~/utils/live-css";
-import { parseClasses, sizeMatch } from "~/utils/tw-tokens";
 import type { CvaModel } from "../../server/lib/cva-codec";
-
-// Editable pass-through contexts baked into a cva's classes: the `[a]` link (in base) and any `[&_svg]`
-// / `[&_img]` size selector (which may live in a variant option — e.g. the icon media variant). Each
-// becomes its own target scoped to the exact source prefix, so the inspector's Size control edits the
-// real class (`applyUtility` matches tokens on that prefix). Only size-bearing svg/img contexts are
-// surfaced, so a base `[&_svg]:pointer-events-none` isn't mistaken for a size knob.
-function cvaContexts(m: CvaModel) {
-	const out: { context: string; label: string; prefix: string; axis?: string; option?: string }[] =
-		[];
-	if (/\[a\]:/.test(m.base)) out.push({ context: "a", label: "link (a)", prefix: "[a]:" });
-	const scan = (cls: string, axis?: string, option?: string) => {
-		for (const t of parseClasses(cls)) {
-			const kind = t.state.startsWith("[&_svg")
-				? "svg"
-				: t.state.startsWith("[&_img")
-					? "img"
-					: null;
-			if (!kind || !sizeMatch(t.utility)) continue;
-			const context = option ?? kind;
-			if (out.some((c) => c.context === context)) continue; // one size context per option
-			out.push({ context, label: `${option ?? kind} size`, prefix: t.state, axis, option });
-		}
-	};
-	scan(m.base);
-	for (const [axis, opts] of Object.entries(m.variants))
-		for (const [option, cls] of Object.entries(opts)) scan(cls, axis, option);
-	return out;
-}
 
 // The forced-state CSS rule for the focused target: paint its selected state's look (checked / active /
 // hover) unconditionally in the preview so you SEE it without the element being in that state. Reads
@@ -93,6 +56,16 @@ export function CvaControls({
 	onSel: (sel: Selection) => void;
 }) {
 	const [state, setState] = useState("");
+	// The active piece id from the categorized Editing menu (Stage 3). Drives the menu's shown value;
+	// each pick also maps to the existing `sel` so the Inspector/Demo keep working (transition glue).
+	const [piece, setPiece] = useState("");
+	const onPick = useCallback(
+		(value: string, next: Selection) => {
+			setPiece(value);
+			onSel(next);
+		},
+		[onSel],
+	);
 	// Reset to Base when the target changes — a new target carries different states.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on target change, not on edits
 	useEffect(() => setState(""), [sel]);
@@ -122,19 +95,6 @@ export function CvaControls({
 	const slotBase = useWorkbench((s) =>
 		sel.type === "slot" ? (s.slots[sel.slot] ?? "") : undefined,
 	);
-	// The slots loaded from this component's source. Stable maps → memo, so the selector never returns
-	// a fresh array (which would loop). loadedSlots holds every data-slot the component actually has.
-	const slotsMap = useWorkbench((s) => s.slots);
-	const slotOwner = useWorkbench((s) => s.slotOwner);
-	// This component's own slots, plus the paired Label's for a label-operating control (E8/AFFORD) —
-	// the label edits save to the Label component (its owner), the editor just surfaces it here.
-	const loadedSlots = useMemo(
-		() =>
-			Object.keys(slotsMap).filter(
-				(k) => slotOwner[k] === name || (LABEL_CONTROLS.has(name) && slotOwner[k] === "label"),
-			),
-		[slotsMap, slotOwner, name],
-	);
 
 	// Every real cva for this component, in declaration order. A component can have several — item has
 	// itemVariants (root) and itemMediaVariants (media) — and each edits its own file. "Real" = a
@@ -149,87 +109,14 @@ export function CvaControls({
 		[modelsMap, name],
 	);
 	const hasCva = cvas.length > 0;
-	const multi = cvas.length > 1;
 	// The cva the current selection edits: matched by symbol, else the first (also the slot-selection
 	// fallback). Undefined only for a non-cva component, whose cva paths below never render.
 	const model =
 		(sel.type === "cva" ? cvas.find((m) => m.exportName === sel.target.symbol) : undefined) ??
 		cvas[0];
 
-	// Default to the component's OWN first slot, never a borrowed one (a control's paired label sorts in
-	// too) — landing on `checkbox` should edit the checkbox, not its label.
-	const firstSlot = loadedSlots.find((s) => slotOwner[s] === name) ?? loadedSlots[0];
-
-	// Non-cva component but the selection is still the default cva target → jump to its first slot.
-	useEffect(() => {
-		if (!hasCva && sel.type === "cva" && firstSlot) onSel({ type: "slot", slot: firstSlot });
-	}, [hasCva, sel.type, firstSlot, onSel]);
-
 	if (!anyModel) return <p className="p-4 text-sm text-subtext0">Loading {name}…</p>;
 	const apply = (m: CvaModel) => workbenchStore.getState().setModel(m.exportName, m);
-
-	// One dropdown group per cva: Base, any pass-through contexts (`[a]` link), and every variant
-	// option — each tagged with the cva's export symbol so it edits the right file. Flat for a single
-	// cva; grouped and labeled by slot (item, item-media, …) when a component has several.
-	const cvaGroups = cvas.map((m) => {
-		const options = [
-			{
-				value: `cva:${m.exportName}:base`,
-				label: "Base",
-				sel: { type: "cva", target: { kind: "base", symbol: m.exportName } } as Selection,
-			},
-			...cvaContexts(m).map((c) => ({
-				value: `cva:${m.exportName}:ctx:${c.context}`,
-				label: c.label,
-				sel: {
-					type: "cva",
-					target: {
-						kind: "context",
-						context: c.context,
-						prefix: c.prefix,
-						symbol: m.exportName,
-						axis: c.axis,
-						option: c.option,
-					},
-				} as Selection,
-			})),
-			...Object.entries(m.variants).flatMap(([axis, opts]) =>
-				Object.keys(opts).map((option) => ({
-					value: `cva:${m.exportName}:opt:${axis}:${option}`,
-					label: `${axis} · ${option}`,
-					sel: {
-						type: "cva",
-						target: { kind: "option", axis, option, symbol: m.exportName },
-					} as Selection,
-				})),
-			),
-		];
-		return { symbol: m.exportName, label: slotForCva(m.exportName), options };
-	});
-	const slotOptions = loadedSlots.map((slot) => {
-		// A classNames surface (surface:<owner>:<key>) shows its bare key; a data-slot drops the
-		// component prefix (dropdown-menu-item → "item").
-		const surf = parseSurface(slot);
-		const label = surf
-			? surf.key.replace(/_/g, " ")
-			: slot.startsWith(`${name}-`)
-				? slot.slice(name.length + 1).replace(/-/g, " ")
-				: slot;
-		return { value: `slot:${slot}`, label, sel: { type: "slot", slot } as Selection };
-	});
-	const allOptions = [...cvaGroups.flatMap((g) => g.options), ...slotOptions];
-
-	// The default selection can be created before this component's model has loaded, so it may carry no
-	// symbol — fall back to the active (first) cva so the dropdown still reflects it.
-	const activeSymbol = sel.type === "cva" ? (sel.target.symbol ?? model?.exportName) : undefined;
-	const currentValue =
-		sel.type === "slot"
-			? `slot:${sel.slot}`
-			: sel.target.kind === "base"
-				? `cva:${activeSymbol}:base`
-				: sel.target.kind === "context"
-					? `cva:${activeSymbol}:ctx:${sel.target.context}`
-					: `cva:${activeSymbol}:opt:${sel.target.axis}:${sel.target.option}`;
 
 	const value =
 		sel.type === "slot" ? (slotBase ?? "") : model ? targetClass(model, sel.target) : "";
@@ -245,52 +132,7 @@ export function CvaControls({
 
 	return (
 		<div className="flex flex-col gap-4 p-4">
-			<div className="flex flex-col gap-1.5">
-				<span className="text-xs font-medium text-subtext0">Editing</span>
-				<Select
-					value={currentValue}
-					onValueChange={(v) =>
-						onSel(
-							allOptions.find((o) => o.value === v)?.sel ?? {
-								type: "cva",
-								target: { kind: "base" },
-							},
-						)
-					}
-				>
-					<SelectTrigger className="h-8">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						{multi
-							? cvaGroups.map((g) => (
-									<SelectGroup key={g.symbol}>
-										<SelectLabel>{g.label}</SelectLabel>
-										{g.options.map((o) => (
-											<SelectItem key={o.value} value={o.value}>
-												{o.label}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								))
-							: cvaGroups[0]?.options.map((o) => (
-									<SelectItem key={o.value} value={o.value}>
-										{o.label}
-									</SelectItem>
-								))}
-						{slotOptions.length > 0 && (
-							<SelectGroup>
-								<SelectLabel>Surfaces</SelectLabel>
-								{slotOptions.map((o) => (
-									<SelectItem key={o.value} value={o.value}>
-										{o.label}
-									</SelectItem>
-								))}
-							</SelectGroup>
-						)}
-					</SelectContent>
-				</Select>
-			</div>
+			<EditingMenu name={name} value={piece} onPick={onPick} />
 
 			<Inspector
 				value={value}
