@@ -10,7 +10,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
-import { useComponentModel } from "~/hooks/use-workbench-data";
+import { LABEL_CONTROLS, useComponentModel } from "~/hooks/use-workbench-data";
 import { parseSurface, useWorkbench, workbenchStore } from "~/stores/workbench";
 import {
 	addAxis,
@@ -126,8 +126,13 @@ export function CvaControls({
 	// a fresh array (which would loop). loadedSlots holds every data-slot the component actually has.
 	const slotsMap = useWorkbench((s) => s.slots);
 	const slotOwner = useWorkbench((s) => s.slotOwner);
+	// This component's own slots, plus the paired Label's for a label-operating control (E8/AFFORD) —
+	// the label edits save to the Label component (its owner), the editor just surfaces it here.
 	const loadedSlots = useMemo(
-		() => Object.keys(slotsMap).filter((k) => slotOwner[k] === name),
+		() =>
+			Object.keys(slotsMap).filter(
+				(k) => slotOwner[k] === name || (LABEL_CONTROLS.has(name) && slotOwner[k] === "label"),
+			),
 		[slotsMap, slotOwner, name],
 	);
 

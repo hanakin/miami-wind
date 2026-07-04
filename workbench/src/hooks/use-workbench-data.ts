@@ -151,6 +151,12 @@ export function useDeleteCva() {
 	});
 }
 
+// Controls a label operates: their demo pairs the control with a <Label htmlFor> that toggles it, so
+// the label's affordance (cursor:pointer) is part of editing the control. The label is a separate
+// primitive, so its edits save to the Label component (data-slot="label") — the editor just surfaces
+// it here as a linked target (E8/AFFORD).
+export const LABEL_CONTROLS = new Set(["checkbox", "switch", "radio-group"]);
+
 /** Load one component's current per-slot classes (vanilla or promoted custom) into the store. */
 export function useComponentSlots(name: string) {
 	const query = useQuery({
