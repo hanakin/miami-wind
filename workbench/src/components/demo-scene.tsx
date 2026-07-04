@@ -56,6 +56,10 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 	// Demos for this component, globbed from demo/<name>/ (every component is migrated).
 	const demos = DEMOS[name];
 	const entries = useMemo<Demo[]>(() => demos ?? [], [demos]);
+	// Revealed-on-interaction natures (the 13 portals) ship an `examples/<name>/_open.tsx` that
+	// force-mounts the content inline and prevents close — render it by default so the menu/dialog/…
+	// shows open at rest and stays open while you edit it (E5/SHOW), instead of only a closed trigger.
+	const openExample = useMemo(() => OVERRIDES[name]?.find((o) => o.name === "_open"), [name]);
 
 	// A classNames surface has no single [data-slot] element to clone into the focus panel — it's painted
 	// live in the demos above by the overlay — so skip the single-instance focus for it.
@@ -153,7 +157,14 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 		<div data-preview data-exploded className="flex flex-col gap-8 p-6">
 			<style>{EXPLODED_CSS}</style>
 			<div ref={topRef} className="flex flex-wrap items-start gap-8">
-				{entries.length === 0 ? (
+				{openExample && (
+					<Section label="open">
+						<div data-demo="_open" className="flex flex-wrap items-start gap-5">
+							<openExample.Component />
+						</div>
+					</Section>
+				)}
+				{entries.length === 0 && !openExample ? (
 					<p className="text-sm text-subtext0">No demos for {name} yet.</p>
 				) : (
 					entries.map((d) => (
