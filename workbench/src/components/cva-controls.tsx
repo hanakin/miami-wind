@@ -11,7 +11,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { useComponentModel } from "~/hooks/use-workbench-data";
-import { useWorkbench, workbenchStore } from "~/stores/workbench";
+import { parseSurface, useWorkbench, workbenchStore } from "~/stores/workbench";
 import {
 	addAxis,
 	addOption,
@@ -145,11 +145,17 @@ export function CvaControls({
 		];
 		return { symbol: m.exportName, label: slotForCva(m.exportName), options };
 	});
-	const slotOptions = loadedSlots.map((slot) => ({
-		value: `slot:${slot}`,
-		label: slot.startsWith(`${name}-`) ? slot.slice(name.length + 1).replace(/-/g, " ") : slot,
-		sel: { type: "slot", slot } as Selection,
-	}));
+	const slotOptions = loadedSlots.map((slot) => {
+		// A classNames surface (surface:<owner>:<key>) shows its bare key; a data-slot drops the
+		// component prefix (dropdown-menu-item → "item").
+		const surf = parseSurface(slot);
+		const label = surf
+			? surf.key.replace(/_/g, " ")
+			: slot.startsWith(`${name}-`)
+				? slot.slice(name.length + 1).replace(/-/g, " ")
+				: slot;
+		return { value: `slot:${slot}`, label, sel: { type: "slot", slot } as Selection };
+	});
 	const allOptions = [...cvaGroups.flatMap((g) => g.options), ...slotOptions];
 
 	// The default selection can be created before this component's model has loaded, so it may carry no

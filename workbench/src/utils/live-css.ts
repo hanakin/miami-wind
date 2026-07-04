@@ -1,3 +1,4 @@
+import { parseSurface } from "~/stores/workbench";
 import type { CvaModel } from "../../server/lib/cva-codec";
 import { parseClasses, parseColor, swatchVar } from "./tw-tokens";
 
@@ -136,23 +137,27 @@ function declsFor(utils: string[]): string {
 	return out.join(" ");
 }
 
-/** Rules for one target (base classes or one variant option), one per interaction state present. */
-function rulesForTarget(slot: string, attr: string, classString: string): string[] {
-	const slotSel = `[data-slot="${slot}"]${attr}`;
+/** Rules for one base selector, one per interaction state present in the class string. */
+function rulesForSelector(baseSel: string, classString: string): string[] {
 	const byState = new Map<string, string[]>();
 	for (const t of parseClasses(classString)) {
-		if (!resolveSelector(t.state, slotSel)) continue; // skip dark:/aria:/data-[state]: — Tailwind's job
+		if (!resolveSelector(t.state, baseSel)) continue; // skip dark:/aria:/data-[state]: — Tailwind's job
 		const list = byState.get(t.state) ?? [];
 		list.push(t.utility);
 		byState.set(t.state, list);
 	}
 	const out: string[] = [];
 	for (const [state, utils] of byState) {
-		const sel = resolveSelector(state, slotSel);
+		const sel = resolveSelector(state, baseSel);
 		const decls = declsFor(utils);
 		if (sel && decls) out.push(`${SCOPE}${sel} { ${decls} }`);
 	}
 	return out;
+}
+
+/** Rules for one data-slot target (base classes or one variant option). */
+function rulesForTarget(slot: string, attr: string, classString: string): string[] {
+	return rulesForSelector(`[data-slot="${slot}"]${attr}`, classString);
 }
 
 // A cva's slot is its export name minus the `Variants` suffix, kebab-cased: itemMediaVariants →
@@ -186,6 +191,12 @@ export function cssForModels(models: Record<string, CvaModel>): string {
 // it after so an explicit slot edit wins over a cva rule on the same element.
 export function cssForSlots(slots: Record<string, string>): string {
 	return Object.entries(slots)
-		.flatMap(([slot, classes]) => rulesForTarget(slot, "", classes))
+		.flatMap(([id, classes]) => {
+			// A classNames surface maps to its rendered class — react-day-picker's `.rdp-<key>` (calendar is
+			// the only classNames-wrapper today). ponytail: rdp convention hardcoded; generalize per-library
+			// if a second one appears. A plain data-slot targets `[data-slot="…"]`.
+			const surf = parseSurface(id);
+			return rulesForSelector(surf ? `.rdp-${surf.key}` : `[data-slot="${id}"]`, classes);
+		})
 		.join("\n");
 }

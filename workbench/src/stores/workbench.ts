@@ -99,6 +99,19 @@ export const workbenchStore = createStore<WorkbenchState>((set) => ({
 	markSlotsSaved: () => set((s) => ({ savedSlots: { ...s.slots } })),
 }));
 
+// A classNames surface (a cn() inside a `classNames={{…}}` object, e.g. calendar's day/weekday) rides
+// the same slot machinery — working/saved/owner/dirty — under a namespaced key so it never collides
+// with a data-slot. Only its preview selector (.rdp-<key>) and write path (writeClassNames) differ,
+// branched at those two seams. `owner` keeps a short key like `day` unique across components.
+export const SURFACE = "surface:";
+export const surfaceKey = (owner: string, key: string): string => `${SURFACE}${owner}:${key}`;
+export function parseSurface(id: string): { owner: string; key: string } | null {
+	if (!id.startsWith(SURFACE)) return null;
+	const rest = id.slice(SURFACE.length);
+	const i = rest.indexOf(":");
+	return i < 0 ? null : { owner: rest.slice(0, i), key: rest.slice(i + 1) };
+}
+
 /** Surfaces whose working classes differ from the last-saved baseline. */
 export function dirtySlots(state: WorkbenchState): string[] {
 	const keys = new Set([...Object.keys(state.slots), ...Object.keys(state.savedSlots)]);

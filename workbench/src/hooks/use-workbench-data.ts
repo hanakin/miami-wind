@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { dirtySlots, isDirty, useWorkbench, workbenchStore } from "~/stores/workbench";
+import {
+	dirtySlots,
+	isDirty,
+	parseSurface,
+	surfaceKey,
+	useWorkbench,
+	workbenchStore,
+} from "~/stores/workbench";
 import { client } from "~/utils/api";
 import type { CvaModel } from "../../server/lib/cva-codec";
 
@@ -149,15 +156,21 @@ export function useComponentSlots(name: string) {
 	const query = useQuery({
 		queryKey: ["components", name],
 		queryFn: async (): Promise<
-			{ slots: Record<string, string>; custom: boolean } | { error: string }
+			| { slots: Record<string, string>; surfaces: Record<string, string>; custom: boolean }
+			| { error: string }
 		> => {
 			const r = await client.api.components[":name"].$get({ param: { name } });
 			return r.json();
 		},
 	});
-	const data = query.data && "slots" in query.data ? query.data.slots : undefined;
+	const data = query.data && "slots" in query.data ? query.data : undefined;
 	useEffect(() => {
-		if (data) workbenchStore.getState().loadSlots(name, data);
+		if (!data) return;
+		// classNames surfaces load into the same store under a namespaced key (surface:<owner>:<key>).
+		const surfaces = Object.fromEntries(
+			Object.entries(data.surfaces).map(([k, v]) => [surfaceKey(name, k), v]),
+		);
+		workbenchStore.getState().loadSlots(name, { ...data.slots, ...surfaces });
 	}, [data, name]);
 	return query;
 }
@@ -175,16 +188,29 @@ export function useSaveSlots() {
 	const count = useSlotDirtyCount();
 	const saveSlots = async () => {
 		const s = workbenchStore.getState();
-		const byComp = new Map<string, Record<string, string>>();
-		for (const slot of dirtySlots(s)) {
-			const comp = s.slotOwner[slot];
+		// Group by owning component, splitting data-slot edits (writeSlots) from classNames-surface edits
+		// (writeClassNames) — the server applies each to the right place in the source.
+		const byComp = new Map<
+			string,
+			{ slots: Record<string, string>; surfaces: Record<string, string> }
+		>();
+		for (const id of dirtySlots(s)) {
+			const comp = s.slotOwner[id];
 			if (!comp) continue;
-			const map = byComp.get(comp) ?? {};
-			map[slot] = s.slots[slot] ?? "";
-			byComp.set(comp, map);
+			const bucket = byComp.get(comp) ?? { slots: {}, surfaces: {} };
+			const surf = parseSurface(id);
+			if (surf) bucket.surfaces[surf.key] = s.slots[id] ?? "";
+			else bucket.slots[id] = s.slots[id] ?? "";
+			byComp.set(comp, bucket);
 		}
-		for (const [comp, json] of byComp) {
-			await client.api.components[":name"].$put({ param: { name: comp }, json });
+		for (const [comp, { slots, surfaces }] of byComp) {
+			await client.api.components[":name"].$put({
+				param: { name: comp },
+				json: {
+					...(Object.keys(slots).length ? { slots } : {}),
+					...(Object.keys(surfaces).length ? { surfaces } : {}),
+				},
+			});
 		}
 		workbenchStore.getState().markSlotsSaved();
 		qc.invalidateQueries({ queryKey: ["components"] });

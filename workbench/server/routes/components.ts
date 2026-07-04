@@ -6,7 +6,7 @@ import { z } from "zod";
 import { formatFile } from "../lib/format";
 import { REGISTRY_JSON, safeName, UI_DIR, VENDORED_UI } from "../lib/registry-paths";
 import type { RegistryJson } from "../lib/theme-codec";
-import { readSlots, writeSlots } from "../lib/tsx-slots";
+import { readClassNames, readSlots, writeClassNames, writeSlots } from "../lib/tsx-slots";
 import { externalDeps, removeUiItem, upsertUiItem } from "../lib/ui-items";
 
 // components — the slot-editing round-trip for components that have no cva.
@@ -45,20 +45,30 @@ async function writeRegistry(reg: RegistryJson): Promise<void> {
 	await writeFile(REGISTRY_JSON, `${JSON.stringify(reg, null, "\t")}\n`, "utf8");
 }
 
-const slotMapSchema = z.record(z.string(), z.string());
+const classMap = z.record(z.string(), z.string());
+// A component may expose two kinds of editable class surface: data-slot elements (writeSlots) and the
+// cn()s inside a classNames={{…}} object (writeClassNames). The client sends whichever it edited.
+const putSchema = z.object({ slots: classMap.optional(), surfaces: classMap.optional() });
 
 const components = new Hono()
 	.get("/:name", async (c) => {
 		const name = safeName(c.req.param("name"));
 		const src = await currentSource(name);
 		if (src == null) return c.json({ error: "not found" }, 404);
-		return c.json({ slots: readSlots(src), custom: await exists(customPath(name)) });
+		return c.json({
+			slots: readSlots(src),
+			surfaces: readClassNames(src),
+			custom: await exists(customPath(name)),
+		});
 	})
-	.put("/:name", zValidator("json", slotMapSchema), async (c) => {
+	.put("/:name", zValidator("json", putSchema), async (c) => {
 		const name = safeName(c.req.param("name"));
 		const base = await currentSource(name);
 		if (base == null) return c.json({ error: "not found" }, 404);
-		const next = writeSlots(base, c.req.valid("json"));
+		const { slots, surfaces } = c.req.valid("json");
+		let next = base;
+		if (slots) next = writeSlots(next, slots);
+		if (surfaces) next = writeClassNames(next, surfaces);
 		await writeFile(customPath(name), next, "utf8"); // promote: now owned in the registry
 		await formatFile(customPath(name));
 		await writeRegistry(upsertUiItem(await readRegistry(), name, externalDeps(next)));

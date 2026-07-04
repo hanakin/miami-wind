@@ -1,4 +1,5 @@
 import { type ComponentType, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { parseSurface } from "~/stores/workbench";
 import type { Selection } from "~/utils/editor-selection";
 
 type Demo = { name: string; Component: ComponentType };
@@ -56,7 +57,9 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 	const demos = DEMOS[name];
 	const entries = useMemo<Demo[]>(() => demos ?? [], [demos]);
 
-	const slot = sel.type === "slot" ? sel.slot : null;
+	// A classNames surface has no single [data-slot] element to clone into the focus panel — it's painted
+	// live in the demos above by the overlay — so skip the single-instance focus for it.
+	const slot = sel.type === "slot" && !parseSurface(sel.slot) ? sel.slot : null;
 	const opt = sel.type === "cva" && sel.target.kind === "option" ? sel.target : null;
 	const ctx = sel.type === "cva" && sel.target.kind === "context" ? sel.target : null;
 	const filterKey =
