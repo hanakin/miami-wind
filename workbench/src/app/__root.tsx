@@ -169,7 +169,19 @@ function ScopeSelect() {
 	const primitives = usePrimitives();
 	const custom = new Set(primitives.data?.custom ?? []);
 	const models = useWorkbench((s) => s.models);
-	const cvaNames = useMemo(() => new Set(Object.values(models).map((m) => m.name)), [models]);
+	// Group by REAL cva presence (actual base/variants), not the blank seed useEnsureModel gives every
+	// visited component — otherwise selecting a non-cva component registers a seed and jumps it from
+	// "Components" into "With variants" under the cursor (E7/SYNC). Mirrors the `cvas` filter in
+	// cva-controls, and every real cva is seeded at load (demos glob-import eagerly), so this is stable.
+	const cvaNames = useMemo(
+		() =>
+			new Set(
+				Object.values(models)
+					.filter((m) => m.base.trim() !== "" || Object.keys(m.variants).length > 0)
+					.map((m) => m.name),
+			),
+		[models],
+	);
 
 	const names = [...new Set([...demoComponentNames, ...custom])].sort();
 	const customNames = names.filter((n) => custom.has(n));

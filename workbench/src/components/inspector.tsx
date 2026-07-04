@@ -319,7 +319,10 @@ function RawClasses({
 }) {
 	const [q, setQ] = useState("");
 	const classes = useTailwindClasses();
-	const tokens = parseClasses(value).filter((t) => t.state === state);
+	// Every selector on this target — [&_svg]:, hover:, focus-visible:, aria-*, data-*, arbitrary [] —
+	// not just the current State's, so nothing is hidden from editing (CLS/E2). New classes still add at
+	// the selected state below.
+	const tokens = parseClasses(value);
 	const matches = useMemo(() => {
 		const ql = q.trim().toLowerCase().replace(/^.*:/, "");
 		if (!ql) return [];
@@ -330,14 +333,14 @@ function RawClasses({
 		<div className="flex flex-col gap-2">
 			<div className="flex flex-wrap gap-1">
 				{tokens.length === 0 && (
-					<span className="text-xs text-subtext0">No classes in this state.</span>
+					<span className="text-xs text-subtext0">No classes on this part.</span>
 				)}
 				{tokens.map((t) => (
 					<span
 						key={t.raw}
 						className="inline-flex items-center gap-1 rounded bg-interactive py-0.5 pr-1 pl-1.5 font-mono text-[11px] text-text"
 					>
-						{t.utility}
+						{t.raw}
 						<button
 							type="button"
 							aria-label={`remove ${t.utility}`}
