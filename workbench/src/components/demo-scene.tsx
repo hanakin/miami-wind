@@ -172,8 +172,10 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 
 function renderFocus(focus: Focus, name: string, entries: Demo[]): ReactNode {
 	if (focus.kind === "slot") {
+		// relative + clip contains an absolutely-positioned clone (aspect-ratio's inset-0 inner loses its
+		// Radix positioning parent when cloned) so it can't escape to the viewport — WIDE/E6.
 		return (
-			<div className="flex w-72 max-w-full flex-col items-start gap-1.5">
+			<div className="relative flex w-72 max-w-full flex-col items-start gap-1.5 overflow-hidden">
 				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: cloned from our own rendered demos above. */}
 				<div className="w-full" dangerouslySetInnerHTML={{ __html: focus.html }} />
 				<span className="font-mono text-[10px] text-subtext0">from {focus.from}</span>

@@ -179,3 +179,13 @@ export function cssForModel(model: CvaModel): string {
 export function cssForModels(models: Record<string, CvaModel>): string {
 	return Object.values(models).map(cssForModel).filter(Boolean).join("\n");
 }
+
+// Live overlay for per-slot raw-class edits (the non-cva path). Each slot's working classes resolve to
+// the same `[data-preview] [data-slot=…]` rules the cva path uses, so a slot edit paints BEFORE Save —
+// exactly like a cva edit — instead of waiting on the Save-triggered HMR. Mirrors cssForModels; append
+// it after so an explicit slot edit wins over a cva rule on the same element.
+export function cssForSlots(slots: Record<string, string>): string {
+	return Object.entries(slots)
+		.flatMap(([slot, classes]) => rulesForTarget(slot, "", classes))
+		.join("\n");
+}

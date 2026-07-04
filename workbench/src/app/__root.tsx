@@ -31,7 +31,7 @@ import {
 } from "~/hooks/use-workbench-data";
 import { themeDirty, themeStore, useTheme } from "~/stores/theme";
 import { useWorkbench, workbenchStore } from "~/stores/workbench";
-import { cssForModels } from "~/utils/live-css";
+import { cssForModels, cssForSlots } from "~/utils/live-css";
 
 export interface RouterContext {
 	queryClient: QueryClient;
@@ -50,17 +50,18 @@ function RootLayout() {
 		for (const t of themeTokens) el.style.setProperty(t.name, t.value);
 	}, [themeTokens]);
 
-	// Live cva: resolve the working models to CSS and repaint a scoped stylesheet on every edit,
-	// so class changes (opacity, colors, radius…) show instantly without Tailwind recompiling.
-	// Slot edits on non-cva components aren't overlaid here — they're written to the custom component
-	// file on Save and repaint via HMR (exact, no overlay/ship drift).
+	// Live cva + slots: resolve the working models AND per-slot edits to CSS and repaint a scoped
+	// stylesheet on every edit, so class changes (opacity, colors, radius…) show instantly without
+	// Tailwind recompiling. Slots are appended after models so an explicit slot edit wins over a cva
+	// rule on the same element. Save still rewrites the real files (cva / custom component); the overlay
+	// just closes the pre-Save gap so the round-trip shows live.
 	useEffect(() => {
 		const style = document.createElement("style");
 		style.id = "live-cva";
 		document.head.appendChild(style);
 		const paint = () => {
 			const s = workbenchStore.getState();
-			style.textContent = cssForModels(s.models);
+			style.textContent = `${cssForModels(s.models)}\n${cssForSlots(s.slots)}`;
 		};
 		paint();
 		const unsub = workbenchStore.subscribe(paint);
