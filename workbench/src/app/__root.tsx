@@ -24,6 +24,7 @@ import { TooltipProvider } from "~/components/ui/tooltip";
 import { useSaveTheme, useThemeData } from "~/hooks/use-theme-data";
 import {
 	useDirtyCount,
+	useInitEditorModels,
 	useInitOverrides,
 	usePrimitives,
 	useSaveAll,
@@ -43,6 +44,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootLayout() {
 	useInitOverrides();
+	useInitEditorModels();
 	useThemeData();
 	const themeTokens = useTheme((s) => s.tokens);
 	useEffect(() => {

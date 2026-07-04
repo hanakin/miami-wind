@@ -1,4 +1,7 @@
 import * as ts from "typescript";
+// tw-tokens is pure prefix-parsing (no React/DOM) — reuse its class/state splitter so the reader and
+// the client's controls agree on what a "state" is, instead of a second, drifting regex here.
+import { parseClasses, statePart } from "../../src/utils/tw-tokens";
 import { readSlots } from "./tsx-slots";
 
 /**
@@ -27,6 +30,13 @@ export interface Flag {
 	namespace: string;
 }
 
+export interface Interaction {
+	/** plain mechanism name — `default` (resting) · hover · focus · focus-visible · active · disabled · visited · checked */
+	name: string;
+	/** true = the piece really carries this state's classes (edit it); false = a core state offered to Add (create) */
+	present: boolean;
+}
+
 export interface ComponentModel {
 	name: string;
 	/** the primary visible element's slot (the `*-content` for a triggered pair, else the root) */
@@ -39,6 +49,10 @@ export interface ComponentModel {
 	parts: string[];
 	variants: Variant[];
 	flags: Flag[];
+	/** per DOM piece: its real interactions (present) + the core states it could add (present:false) */
+	interactionsByPiece: Record<string, Interaction[]>;
+	/** per piece × interaction: the raw class substring carrying that state — what the controls read/edit */
+	classesByPieceState: Record<string, Record<string, string>>;
 }
 
 // --- cva discovery (multi-cva; parseCva only returns the last one) -----------------------------------
@@ -133,6 +147,84 @@ function isStructure(name: string, slot: string): boolean {
 	);
 }
 
+// --- interaction derivation -------------------------------------------------------------------------
+// Each piece's real interactions come from its OWN classes (cva base for a cva'd slot, else the slot
+// className). This is where the hover-vs-`focus:` bug dies: the "this piece highlights on `focus:`"
+// mapping is computed ONCE from the real file, not guessed per click.
+
+/** A single state segment (contexts like `[&_svg]:` already stripped by tw-tokens' statePart). */
+const STATE_SEGMENT = /[a-zA-Z0-9-]+(?:\[[^\]]*\])?:/g;
+/** Core states offered to Add on any element; +visited for links. Others show only when present. */
+const CORE = ["hover", "focus", "active", "disabled"] as const;
+/** A utility that only animates — a state made entirely of these carries nothing the controls edit. */
+const ANIM = /^(animate-|fade-(in|out)|zoom-(in|out)|slide-(in|out)|spin$|pulse$|bounce$|ping$)/;
+
+/** The plain interaction a single state segment maps to, or null if it isn't one (variant/env/side). */
+function segmentInteraction(seg: string): string | null {
+	const s = seg.replace(/:$/, "");
+	if (s === "hover" || s === "focus" || s === "focus-visible") return s;
+	if (s === "active" || s === "disabled" || s === "visited") return s;
+	const m = s.match(/^(?:group-|peer-)?(?:data|aria)-\[([a-z-]+)(?:=([a-z0-9-]+))?\]$/);
+	if (!m) return null;
+	const [, key, val] = m;
+	if (key === "state") {
+		if (val === "open" || val === "active") return "active";
+		if (val === "checked" || val === "on") return "checked";
+		if (val === "selected") return "selected";
+		return null; // closed / indeterminate / … — transient, nothing steady to edit
+	}
+	if (key === "disabled") return "disabled";
+	if (key === "checked") return "checked";
+	if (key === "selected") return "selected";
+	return null; // variant / side / align / inset / size / orientation / slot — not an interaction
+}
+
+/** The interaction a whole state-prefix chain belongs to: its first interaction segment (a
+ *  `data-[variant=x]:focus:` class is a focus edit), or null when the chain is purely variant/env. */
+function chainInteraction(chain: string): string | null {
+	for (const seg of chain.match(STATE_SEGMENT) ?? []) {
+		const i = segmentInteraction(seg);
+		if (i) return i;
+	}
+	return null;
+}
+
+/** Group a piece's own classes into `{ interaction: classes }` and the ordered interaction list. */
+function deriveInteractions(
+	own: string,
+	isLink: boolean,
+): { interactions: Interaction[]; classesByState: Record<string, string> } {
+	const groups: Record<string, string[]> = {};
+	for (const t of parseClasses(own)) {
+		const chain = statePart(t.state); // contexts ([a]:, [&_svg]:) already dropped
+		const which = chain === "" ? "default" : chainInteraction(chain);
+		if (which === null) continue; // a variant/env-only class — edited elsewhere, not a resting state
+		const group = groups[which] ?? [];
+		group.push(t.raw);
+		groups[which] = group;
+	}
+
+	const classesByState: Record<string, string> = {};
+	const present: string[] = [];
+	for (const [state, raws] of Object.entries(groups)) {
+		// Hide an animation-only state (a content's open = animate/fade/zoom) — nothing to edit yet.
+		if (state !== "default" && raws.every((r) => ANIM.test(r.slice(r.lastIndexOf(":") + 1))))
+			continue;
+		classesByState[state] = raws.join(" ");
+		present.push(state);
+	}
+	if (!present.includes("default")) {
+		classesByState.default = "";
+		present.unshift("default");
+	}
+
+	const core = isLink ? [...CORE, "visited"] : [...CORE];
+	const interactions: Interaction[] = [{ name: "default", present: true }];
+	for (const s of present) if (s !== "default") interactions.push({ name: s, present: true });
+	for (const c of core) if (!present.includes(c)) interactions.push({ name: c, present: false });
+	return { interactions, classesByState };
+}
+
 export function readComponentModel(source: string, name: string): ComponentModel {
 	const slots = readSlots(source); // { slot: classes }
 	const cvas = findCvas(source);
@@ -183,5 +275,28 @@ export function readComponentModel(source: string, name: string): ComponentModel
 	// element still has a cva or is editable; icon/image aren't slots at all, so they never land here.)
 	const parts = slotNames.filter((s) => s !== root && s !== trigger && !structure.includes(s));
 
-	return { name, root, trigger, structure, parts, variants, flags };
+	// Interactions per piece — from its OWN classes (cva base for a cva'd slot, else its slot className).
+	const cvaBySlot = new Map(cvas.map((c) => [c.slot, c]));
+	const isLink = flags.some((f) => f.name === "as link");
+	const interactionsByPiece: Record<string, Interaction[]> = {};
+	const classesByPieceState: Record<string, Record<string, string>> = {};
+	for (const piece of [root, trigger, ...structure, ...parts]) {
+		if (!piece) continue;
+		const own = cvaBySlot.get(piece)?.base ?? slots[piece] ?? "";
+		const { interactions, classesByState } = deriveInteractions(own, isLink && piece === root);
+		interactionsByPiece[piece] = interactions;
+		classesByPieceState[piece] = classesByState;
+	}
+
+	return {
+		name,
+		root,
+		trigger,
+		structure,
+		parts,
+		variants,
+		flags,
+		interactionsByPiece,
+		classesByPieceState,
+	};
 }

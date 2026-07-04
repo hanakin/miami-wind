@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { editorModelStore } from "~/stores/editor-model";
 import {
 	dirtySlots,
 	isDirty,
@@ -17,6 +18,20 @@ export function usePrimitives() {
 		queryKey: ["primitives"],
 		queryFn: async () => client.api.primitives.$get().then((r) => r.json()),
 	});
+}
+
+/** Pre-bake: run the reader over every component once on mount → the editor-model store. */
+export function useInitEditorModels() {
+	const query = useQuery({
+		queryKey: ["models"],
+		queryFn: async () => client.api.models.$get().then((r) => r.json()),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+	const models = query.data?.models;
+	useEffect(() => {
+		if (models) editorModelStore.getState().loadModels(models);
+	}, [models]);
+	return query;
 }
 
 /** Load the registry cva overrides into the store once on mount. */

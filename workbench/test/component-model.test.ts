@@ -11,6 +11,11 @@ const model = (name: string) =>
 const variantNames = (m: ReturnType<typeof model>) => m.variants.map((v) => v.name);
 const flagNames = (m: ReturnType<typeof model>) => m.flags.map((f) => f.name);
 
+const present = (m: ReturnType<typeof model>, piece: string) =>
+	(m.interactionsByPiece[piece] ?? []).filter((i) => i.present).map((i) => i.name);
+const addable = (m: ReturnType<typeof model>, piece: string) =>
+	(m.interactionsByPiece[piece] ?? []).filter((i) => !i.present).map((i) => i.name);
+
 describe("component-model — item (the done reference)", () => {
 	const m = model("item");
 
@@ -89,5 +94,50 @@ describe("component-model — dropdown-menu (the dynamic reference)", () => {
 		expect(variantNames(m)).toContain("destructive");
 		expect(flagNames(m)).toContain("inset");
 		expect(flagNames(m)).not.toContain("disabled"); // data-[disabled] is a state, not a flag
+	});
+});
+
+describe("component-model — interactions (derived from real classes, per piece)", () => {
+	const item = model("item");
+	const dm = model("dropdown-menu");
+
+	it("dropdown item: focus·disabled are real; hover·active offered to Add; no animation/checked", () => {
+		const p = present(dm, "dropdown-menu-item");
+		expect(p).toEqual(expect.arrayContaining(["default", "focus", "disabled"]));
+		expect(p).not.toContain("hover"); // the highlight is focus:, NOT hover: — the exact bug
+		expect(p).not.toContain("checked");
+		expect(addable(dm, "dropdown-menu-item")).toEqual(expect.arrayContaining(["hover", "active"]));
+	});
+
+	it("dropdown checkbox-item: focus·disabled real; NO checked (its check is an ItemIndicator, not an editable class)", () => {
+		const p = present(dm, "dropdown-menu-checkbox-item");
+		expect(p).toEqual(expect.arrayContaining(["default", "focus", "disabled"]));
+		expect(p).not.toContain("checked");
+	});
+
+	it("dropdown sub-trigger: active is real (data-[state=open] → active), backed by editable classes", () => {
+		expect(present(dm, "dropdown-menu-sub-trigger")).toEqual(
+			expect.arrayContaining(["focus", "active"]),
+		);
+		// active carries real (non-animation) classes → editable
+		expect(dm.classesByPieceState["dropdown-menu-sub-trigger"]?.active).toContain("bg-accent");
+	});
+
+	it("dropdown content: only default — its open/closed are animation-only and hidden", () => {
+		expect(present(dm, "dropdown-menu-content")).toEqual(["default"]);
+	});
+
+	it("dropdown trigger: no own classes → default only; active is a core Add offer", () => {
+		expect(present(dm, "dropdown-menu-trigger")).toEqual(["default"]);
+		expect(addable(dm, "dropdown-menu-trigger")).toContain("active");
+	});
+
+	it("item root: focus-visible (ring) is real; core states offered to Add", () => {
+		const p = present(item, "item");
+		expect(p).toContain("focus-visible");
+		expect(item.classesByPieceState.item?.["focus-visible"]).toContain(
+			"focus-visible:ring-ring/50",
+		);
+		expect(addable(item, "item")).toEqual(expect.arrayContaining(["focus", "active", "disabled"]));
 	});
 });
