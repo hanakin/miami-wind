@@ -103,16 +103,19 @@ export function Inspector({
 		onChange(applyUtility(value, fullState, match, util));
 
 	// States aren't a fixed list — derive them from the target's real classes so every component's own
-	// states surface (checkbox → checked, tabs → active, accordion → open, …). Common pseudos are also
-	// offered (to add one that doesn't exist yet), but a REAL state owns its label — so tabs' selected
-	// `data-[state=active]` wins "Active" over the `active:` pseudo instead of showing twice.
+	// states surface (checkbox → checked, tabs → active, accordion → open, …). Deduped by LABEL: common
+	// pseudos come first, but a REAL state owns its label (tabs' `data-[state=active]` wins "Active" over
+	// the `active:` pseudo), and two reals that read the same (label's group-data-[disabled] +
+	// peer-disabled → "Disabled") collapse to one.
 	const stateKeys = useMemo(() => {
-		const reals = [...new Set([...statesIn(value), ...statesIn(inherited)])];
-		const owned = new Set(reals.map(stateLabel));
-		const pseudos = ["hover:", "focus-visible:", "active:", "disabled:"].filter(
-			(k) => !owned.has(stateLabel(k)),
-		);
-		return ["", ...pseudos, ...reals];
+		const reals = [...statesIn(value), ...statesIn(inherited)];
+		const realLabels = new Set(reals.map(stateLabel));
+		const byLabel = new Map<string, string>([["Base", ""]]);
+		for (const k of ["hover:", "focus-visible:", "active:", "disabled:"]) {
+			if (!realLabels.has(stateLabel(k))) byLabel.set(stateLabel(k), k);
+		}
+		for (const k of reals) if (!byLabel.has(stateLabel(k))) byLabel.set(stateLabel(k), k);
+		return [...byLabel.values()];
 	}, [value, inherited]);
 
 	return (

@@ -156,7 +156,9 @@ export function CvaControls({
 		(sel.type === "cva" ? cvas.find((m) => m.exportName === sel.target.symbol) : undefined) ??
 		cvas[0];
 
-	const firstSlot = loadedSlots[0];
+	// Default to the component's OWN first slot, never a borrowed one (a control's paired label sorts in
+	// too) — landing on `checkbox` should edit the checkbox, not its label.
+	const firstSlot = loadedSlots.find((s) => slotOwner[s] === name) ?? loadedSlots[0];
 
 	// Non-cva component but the selection is still the default cva target → jump to its first slot.
 	useEffect(() => {
