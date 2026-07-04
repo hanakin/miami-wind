@@ -168,3 +168,115 @@ export function writeSlots(source: string, edits: Record<string, string>): strin
 	for (const s of splices) out = out.slice(0, s.start) + s.text + out.slice(s.end);
 	return out;
 }
+
+// ---- classNames={{ … }} surfaces --------------------------------------------------------------------
+// Some components define their real class surfaces NOT as `data-slot` classNames but as the cn() values
+// of a `classNames={{ key: cn("…", …) }}` object handed to a library — react-day-picker's day / weekday
+// / nav, and any wrapper built the same way. Those carry no data-slot so readSlots misses them, yet
+// they're editable classes all the same, keyed by the object key. Read/write them here so the editor
+// can expose each surface (which selector it maps to in the preview is a per-component, render-time
+// concern the client owns). ponytail: the cn-arg rebuild mirrors spliceFor but on an object-property
+// value instead of a className attribute — kept separate so the vetted slot path stays untouched.
+
+function asCnCall(node: ts.Node | undefined): ts.CallExpression | undefined {
+	return node &&
+		ts.isCallExpression(node) &&
+		ts.isIdentifier(node.expression) &&
+		node.expression.text === "cn"
+		? node
+		: undefined;
+}
+
+/** Editable classes from a value expression: a cn()'s string-literal args joined, or a bare string. */
+function classesFromValue(expr: ts.Expression | undefined): string {
+	const cn = asCnCall(expr);
+	if (cn) {
+		return cn.arguments
+			.filter((a): a is ts.StringLiteral => ts.isStringLiteral(a))
+			.map((a) => a.text)
+			.join(" ");
+	}
+	return expr && ts.isStringLiteral(expr) ? expr.text : "";
+}
+
+/** The first `classNames={{ … }}` object literal in the file, if the component hands one to a library. */
+function classNamesObject(sf: ts.SourceFile): ts.ObjectLiteralExpression | undefined {
+	let found: ts.ObjectLiteralExpression | undefined;
+	const visit = (node: ts.Node) => {
+		if (found) return;
+		const init = ts.isJsxAttribute(node) ? node.initializer : undefined;
+		if (
+			ts.isJsxAttribute(node) &&
+			node.name.getText() === "classNames" &&
+			init &&
+			ts.isJsxExpression(init) &&
+			init.expression &&
+			ts.isObjectLiteralExpression(init.expression)
+		) {
+			found = init.expression;
+			return;
+		}
+		ts.forEachChild(node, visit);
+	};
+	visit(sf);
+	return found;
+}
+
+const unquote = (s: string) => s.replace(/^['"]|['"]$/g, "");
+
+/** Current classes for every `classNames` surface (object key → classes). Empty if there is no object. */
+export function readClassNames(source: string): Record<string, string> {
+	const obj = classNamesObject(parse(source));
+	const out: Record<string, string> = {};
+	if (!obj) return out;
+	for (const p of obj.properties) {
+		if (ts.isPropertyAssignment(p))
+			out[unquote(p.name.getText())] = classesFromValue(p.initializer);
+	}
+	return out;
+}
+
+/** Splice that rewrites a className value expression (cn(...) or a bare string) to `classes`. */
+function spliceForValue(expr: ts.Expression, sf: ts.SourceFile, classes: string): Splice {
+	const lit = JSON.stringify(classes);
+	const cn = asCnCall(expr);
+	if (cn) {
+		let placed = false;
+		const args: string[] = [];
+		for (const a of cn.arguments) {
+			if (ts.isStringLiteral(a)) {
+				if (!placed) {
+					args.push(lit);
+					placed = true;
+				}
+			} else args.push(a.getText(sf));
+		}
+		if (!placed) args.unshift(lit);
+		const all = cn.arguments;
+		const first = all[0];
+		const last = all[all.length - 1];
+		if (!first || !last) return { start: all.pos, end: all.end, text: lit };
+		return { start: first.getStart(sf), end: last.getEnd(), text: args.join(", ") };
+	}
+	if (ts.isStringLiteral(expr)) return { start: expr.getStart(sf), end: expr.getEnd(), text: lit };
+	// No string literal to edit (e.g. a bare defaultClassNames.x) — wrap it so the edit has a home.
+	return { start: expr.getStart(sf), end: expr.getEnd(), text: `cn(${lit}, ${expr.getText(sf)})` };
+}
+
+/** Write the given `classNames` surfaces back into the source, idempotently (mirrors writeSlots). */
+export function writeClassNames(source: string, edits: Record<string, string>): string {
+	const sf = parse(source);
+	const obj = classNamesObject(sf);
+	if (!obj) return source;
+	const byKey = new Map(Object.entries(edits));
+	const splices: Splice[] = [];
+	for (const p of obj.properties) {
+		if (!ts.isPropertyAssignment(p)) continue;
+		const next = byKey.get(unquote(p.name.getText()));
+		if (next !== undefined) splices.push(spliceForValue(p.initializer, sf, next));
+	}
+	splices.sort((a, b) => b.start - a.start);
+	let out = source;
+	for (const s of splices) out = out.slice(0, s.start) + s.text + out.slice(s.end);
+	return out;
+}

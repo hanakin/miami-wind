@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { WORKBENCH_ROOT } from "../server/lib/registry-paths";
-import { readSlots, writeSlots } from "../server/lib/tsx-slots";
+import { readClassNames, readSlots, writeClassNames, writeSlots } from "../server/lib/tsx-slots";
 
 const UI = join(WORKBENCH_ROOT, "src/components/ui");
 const vendored = (name: string) => readFileSync(join(UI, `${name}.tsx`), "utf8");
@@ -65,5 +65,35 @@ describe("tsx-slots — write", () => {
 		const out = writeSlots(vendored("dropdown-menu"), { "dropdown-menu-item": "x" });
 		const after = readSlots(out);
 		expect(after["dropdown-menu-content"]).toBe(before["dropdown-menu-content"]);
+	});
+});
+
+describe("tsx-slots — classNames surfaces (library wrappers)", () => {
+	it("reads calendar's classNames cn() surfaces by object key", () => {
+		const s = readClassNames(vendored("calendar"));
+		expect(s.weekday).toContain("flex-1 rounded-md");
+		expect(s.day).toContain("group/day relative aspect-square");
+		expect(s.nav).toContain("absolute inset-x-0 top-0");
+		expect(s.today).toContain("rounded-md bg-accent");
+		// the spread (...classNames) and non-cn values don't crash the read
+		expect(Object.keys(s).length).toBeGreaterThan(10);
+	});
+
+	it("has no surfaces for a component without a classNames object (button)", () => {
+		expect(readClassNames(vendored("button"))).toEqual({});
+	});
+
+	it("writes a surface and preserves the defaultClassNames arg, idempotently", () => {
+		const edit = { weekday: "flex-1 text-red-500" };
+		const once = writeClassNames(vendored("calendar"), edit);
+		expect(readClassNames(once).weekday).toBe("flex-1 text-red-500");
+		expect(once).toContain('"flex-1 text-red-500", defaultClassNames.weekday'); // passthrough kept
+		expect(writeClassNames(once, edit)).toBe(once); // idempotent
+	});
+
+	it("only touches the requested surface", () => {
+		const before = readClassNames(vendored("calendar"));
+		const out = writeClassNames(vendored("calendar"), { weekday: "x" });
+		expect(readClassNames(out).day).toBe(before.day);
 	});
 });
