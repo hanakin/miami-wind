@@ -36,9 +36,9 @@ export function DropdownMenuOpen() {
 				<DMP.Portal container={host} keepMounted>
 					<DMP.Positioner className="isolate z-50 outline-none" sideOffset={4}>
 						<DMP.Popup data-slot="dropdown-menu-content" className={DROPDOWN_CONTENT}>
-							<DropdownMenuLabel>My Account</DropdownMenuLabel>
-							<DropdownMenuSeparator />
 							<DropdownMenuGroup>
+								<DropdownMenuLabel>My Account</DropdownMenuLabel>
+								<DropdownMenuSeparator />
 								<DropdownMenuItem>
 									Profile
 									<DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>

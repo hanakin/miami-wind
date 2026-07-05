@@ -1,7 +1,7 @@
 "use client";
 
+import { Dialog as DialogP } from "@base-ui/react/dialog";
 import { Icon } from "@registry-ui/icon";
-import { Dialog as DialogP } from "radix-ui";
 import { useState } from "react";
 import {
 	Command,
@@ -18,16 +18,12 @@ export function CommandDialogOpen() {
 	const [host, setHost] = useState<HTMLDivElement | null>(null);
 	return (
 		<DialogP.Root open modal={false}>
-			<div ref={setHost} />
+			<div ref={setHost} className="relative min-h-[420px] w-full" />
 			{host && (
-				<DialogP.Portal container={host}>
-					<DialogP.Content
-						forceMount
+				<DialogP.Portal container={host} keepMounted>
+					<DialogP.Popup
 						data-slot="dialog-content"
-						className="overflow-hidden p-0 sm:max-w-lg"
-						onCloseAutoFocus={(e) => e.preventDefault()}
-						onEscapeKeyDown={(e) => e.preventDefault()}
-						onInteractOutside={(e) => e.preventDefault()}
+						className="absolute top-4 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-xl bg-popover text-popover-foreground ring-1 ring-foreground/10 outline-none"
 					>
 						<Command className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
 							<CommandInput placeholder="Type a command or search..." />
@@ -67,7 +63,7 @@ export function CommandDialogOpen() {
 								</CommandGroup>
 							</CommandList>
 						</Command>
-					</DialogP.Content>
+					</DialogP.Popup>
 				</DialogP.Portal>
 			)}
 		</DialogP.Root>

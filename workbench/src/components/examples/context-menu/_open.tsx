@@ -37,9 +37,9 @@ export function ContextMenuOpen() {
 				<CMP.Portal container={host} keepMounted>
 					<CMP.Positioner className="isolate z-50 outline-none">
 						<CMP.Popup data-slot="context-menu-content" className={CONTEXT_MENU_CONTENT}>
-							<ContextMenuLabel>My Account</ContextMenuLabel>
-							<ContextMenuSeparator />
 							<ContextMenuGroup>
+								<ContextMenuLabel>My Account</ContextMenuLabel>
+								<ContextMenuSeparator />
 								<ContextMenuItem>
 									Profile
 									<ContextMenuShortcut>⇧⌘P</ContextMenuShortcut>

@@ -27,9 +27,7 @@ export function DrawerOpen() {
 					<DrawerTitle>Drawer title</DrawerTitle>
 					<DrawerDescription>A bottom sheet.</DrawerDescription>
 				</DrawerHeader>
-				<div className="p-4 pt-0 text-sm text-muted-foreground">
-					Drawer body content goes here.
-				</div>
+				<div className="p-4 pt-0 text-sm text-muted-foreground">Drawer body content goes here.</div>
 				<DrawerFooter>
 					<Button>Submit</Button>
 					<DrawerClose render={<Button variant="outline">Cancel</Button>} />

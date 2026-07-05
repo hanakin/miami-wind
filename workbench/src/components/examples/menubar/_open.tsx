@@ -37,9 +37,9 @@ export function MenubarOpen() {
 					<MBP.Portal container={host} keepMounted>
 						<MBP.Positioner className="isolate z-50 outline-none" sideOffset={8}>
 							<MBP.Popup data-slot="menubar-content" className={MENUBAR_CONTENT}>
-								<MenubarLabel>File</MenubarLabel>
-								<MenubarSeparator />
 								<MenubarGroup>
+									<MenubarLabel>File</MenubarLabel>
+									<MenubarSeparator />
 									<MenubarItem>
 										New Tab
 										<MenubarShortcut>⌘T</MenubarShortcut>
@@ -64,10 +64,7 @@ export function MenubarOpen() {
 									{host2 && (
 										<MBP.Portal container={host2} keepMounted>
 											<MBP.Positioner className="isolate z-50 outline-none" sideOffset={4}>
-												<MBP.Popup
-													data-slot="menubar-sub-content"
-													className={MENUBAR_SUB_CONTENT}
-												>
+												<MBP.Popup data-slot="menubar-sub-content" className={MENUBAR_SUB_CONTENT}>
 													<MenubarItem>Email Link</MenubarItem>
 													<MenubarItem>Messages</MenubarItem>
 												</MBP.Popup>
