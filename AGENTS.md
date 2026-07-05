@@ -11,7 +11,10 @@ Default for new projects, assumed present unless a nested `AGENTS.md` documents 
 
 - Runtime / package manager: **Bun**
 - Build: **Vite** · Language: **TypeScript (strict)** · Format + lint: **Biome** (tabs)
-- UI: **Tailwind CSS v4** + **shadcn/ui**, themed with **Miami Wind** (preset `b43wwIBBY` lineage)
+- UI: **Tailwind CSS v4** + **shadcn/ui** on **radix**, themed with **Miami Wind** (preset `b43wwIBBY`). The
+  shadcn base the Miami Wind template builds off:
+  `bunx --bun shadcn@latest init --preset b43wwIBBY --template vite --pointer --base radix -n <name> -y`
+  — `--base radix` keeps the radix foundation (vega defaults to base-ui); `-n <name> -y` suppress the prompts.
 - Icons: **`@iconify/react`** via the `Icon` component (iconify strings or custom SVGs; 20px default)
 - Routing: **TanStack Router** (file-based) · Server state: **TanStack Query**
 - Client state: **Zustand** · Validation: **Zod** · Forms: **React Hook Form** (+ Zod resolver)

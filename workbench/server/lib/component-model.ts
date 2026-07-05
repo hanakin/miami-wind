@@ -165,14 +165,24 @@ const ANIM = /^(animate-|fade-(in|out)|zoom-(in|out)|slide-(in|out)|spin$|pulse$
 /** True when a segment SCOPES the class to a flag/variant/context (`[a]:`, `data-[variant=…]:`,
  *  `data-[inset]:`, `data-[size=…]:`) rather than to an interaction. A scoped state belongs to that
  *  flag/variant, never the plain piece — so its hover/focus is surfaced only when you select it. */
+/** data-attr words that are interaction STATES (radix/vega set these) — never flags/scopes. */
+const STATE_ATTR = /^(open|closed|active|disabled|checked|selected|on|indeterminate)$/;
+
 function isScope(seg: string): boolean {
 	if (seg.startsWith("[")) return true; // arbitrary-selector context: [a]: (as link), [&_svg]: (icon)
-	const m = seg
-		.replace(/:$/, "")
-		.match(/^(?:group-|peer-)?(?:data|aria)-\[([a-z-]+)(?:=[a-z0-9-]+)?\]$/);
-	if (!m) return false; // a pseudo (hover:) or an env word (dark:, sm:) — not a scope
-	const key = m[1];
-	return !(key === "state" || key === "disabled" || key === "checked" || key === "selected");
+	const s = seg.replace(/:$/, "");
+	// bracketed data/aria attr (optionally not-/group-/peer- prefixed): data-[variant=x], data-[inset],
+	// not-data-[variant=destructive] (scoped to the non-destructive case).
+	const m = s.match(/^(?:not-)?(?:group-|peer-)?(?:data|aria)-\[([a-z-]+)(?:=[a-z0-9-]+)?\]$/);
+	if (m) {
+		const key = m[1];
+		return !(key === "state" || key === "disabled" || key === "checked" || key === "selected");
+	}
+	// vega / Tailwind v4 boolean-attr shorthand (no brackets): data-inset scopes (a flag); data-open /
+	// data-disabled are interaction states, not scopes.
+	const b = s.match(/^(?:not-)?(?:group-|peer-)?data-([a-z-]+)$/);
+	if (b) return !STATE_ATTR.test(b[1] ?? "");
+	return false; // a pseudo (hover:) or an env word (dark:, sm:) — not a scope
 }
 
 /** The interaction a single (non-scope) segment maps to, or null if it isn't one. */
@@ -181,15 +191,26 @@ function segmentInteraction(seg: string): string | null {
 	if (s === "hover" || s === "focus" || s === "focus-visible") return s;
 	if (s === "active" || s === "disabled" || s === "visited") return s;
 	const m = s.match(/^(?:group-|peer-)?(?:data|aria)-\[([a-z-]+)(?:=([a-z0-9-]+))?\]$/);
-	if (!m) return null;
-	const [, key, val] = m;
-	if (key === "state") {
-		if (val === "open" || val === "active") return "active";
-		if (val === "checked" || val === "on") return "checked";
-		if (val === "selected") return "selected";
-		return null; // closed / indeterminate / … — transient, nothing steady to edit
+	if (m) {
+		const [, key, val] = m;
+		if (key === "state") {
+			if (val === "open" || val === "active") return "active";
+			if (val === "checked" || val === "on") return "checked";
+			if (val === "selected") return "selected";
+			return null; // closed / indeterminate / … — transient, nothing steady to edit
+		}
+		if (key === "disabled" || key === "checked" || key === "selected") return key;
+		return null;
 	}
-	if (key === "disabled" || key === "checked" || key === "selected") return key;
+	// vega / Tailwind v4 boolean-attr shorthand: data-open → active, data-disabled → disabled, …
+	const b = s.match(/^(?:group-|peer-)?data-([a-z-]+)$/);
+	if (b) {
+		const key = b[1];
+		if (key === "open" || key === "active") return "active";
+		if (key === "checked" || key === "on") return "checked";
+		if (key === "selected") return "selected";
+		if (key === "disabled") return "disabled";
+	}
 	return null;
 }
 
@@ -275,11 +296,19 @@ export function readComponentModel(source: string, name: string): ComponentModel
 			if (v && !variants.some((x) => x.name === v && x.namespace === slot))
 				variants.push({ name: v, namespace: slot, axis: "variant" });
 		}
-		// Flags: boolean `data-[flag]` (no `=value`) baked into a class string (inset, …).
-		for (const m of cls.matchAll(/data-\[([a-z-]+)\]:/g)) {
-			const f = m[1];
-			if (f && f !== "disabled" && !flags.some((x) => x.name === f && x.namespace === slot))
-				flags.push({ name: f, namespace: slot });
+		// Flags: boolean data-attr (no `=value`) — bracketed `data-[inset]:` (old) or bare `data-inset:`
+		// (vega / Tailwind v4 shorthand). State attrs (disabled/open/checked/…) are interactions, not flags.
+		for (const re of [/data-\[([a-z-]+)\]:/g, /(?<![a-z-])data-([a-z-]+):/g]) {
+			for (const m of cls.matchAll(re)) {
+				const f = m[1];
+				if (
+					f &&
+					f !== "state" &&
+					!STATE_ATTR.test(f) &&
+					!flags.some((x) => x.name === f && x.namespace === slot)
+				)
+					flags.push({ name: f, namespace: slot });
+			}
 		}
 	}
 	// asChild → an "as link" flag when the root carries an `[a]:` context — which for a cva component

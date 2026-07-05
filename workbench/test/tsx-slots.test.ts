@@ -71,10 +71,10 @@ describe("tsx-slots — write", () => {
 describe("tsx-slots — classNames surfaces (library wrappers)", () => {
 	it("reads calendar's classNames cn() surfaces by object key", () => {
 		const s = readClassNames(vendored("calendar"));
-		expect(s.weekday).toContain("flex-1 rounded-md");
+		expect(s.weekday).toContain("flex-1 rounded-(--cell-radius)");
 		expect(s.day).toContain("group/day relative aspect-square");
 		expect(s.nav).toContain("absolute inset-x-0 top-0");
-		expect(s.today).toContain("rounded-md bg-accent");
+		expect(s.today).toContain("rounded-(--cell-radius) bg-muted");
 		// the spread (...classNames) and non-cn values don't crash the read
 		expect(Object.keys(s).length).toBeGreaterThan(10);
 	});
