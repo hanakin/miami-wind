@@ -17,12 +17,14 @@ export function CollapsibleDemo() {
 		>
 			<div className="flex items-center justify-between gap-4 px-4">
 				<h4 className="text-sm font-semibold">Order #4189</h4>
-				<CollapsibleTrigger asChild>
-					<Button variant="ghost" size="icon" className="size-8">
-						<Icon icon="mdi:chevron-up-down" />
-						<span className="sr-only">Toggle details</span>
-					</Button>
-				</CollapsibleTrigger>
+				<CollapsibleTrigger
+					render={
+						<Button variant="ghost" size="icon" className="size-8">
+							<Icon icon="mdi:chevron-up-down" />
+							<span className="sr-only">Toggle details</span>
+						</Button>
+					}
+				/>
 			</div>
 			<div className="flex items-center justify-between rounded-md border px-4 py-2 text-sm">
 				<span className="text-muted-foreground">Status</span>

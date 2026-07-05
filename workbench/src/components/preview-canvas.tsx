@@ -425,10 +425,7 @@ function Surfaces() {
 					<div className="self-start rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground shadow-md">
 						Add to library
 					</div>
-					<Accordion
-						defaultValue={["a"]}
-						className="rounded-md border border-border px-3"
-					>
+					<Accordion defaultValue={["a"]} className="rounded-md border border-border px-3">
 						<AccordionItem value="a" className="border-none">
 							<AccordionTrigger>Is it accessible?</AccordionTrigger>
 							<AccordionContent>Yes — it follows WAI-ARIA.</AccordionContent>

@@ -14,20 +14,24 @@ import {
 export function ItemLink() {
 	return (
 		<div className="flex w-full max-w-md flex-col gap-6">
-			<Item variant="outline" size="sm" asChild>
-				<a href="#">
-					<ItemMedia variant="icon">
-						<Icon icon="mdi:check-decagram" />
-					</ItemMedia>
-					<ItemContent>
-						<ItemTitle>Your profile has been verified.</ItemTitle>
-						<ItemDescription>View your verification details.</ItemDescription>
-					</ItemContent>
-					<ItemActions>
-						<Icon icon="mdi:chevron-right" className="size-4" />
-					</ItemActions>
-				</a>
-			</Item>
+			<Item
+				variant="outline"
+				size="sm"
+				render={
+					<a href="#">
+						<ItemMedia variant="icon">
+							<Icon icon="mdi:check-decagram" />
+						</ItemMedia>
+						<ItemContent>
+							<ItemTitle>Your profile has been verified.</ItemTitle>
+							<ItemDescription>View your verification details.</ItemDescription>
+						</ItemContent>
+						<ItemActions>
+							<Icon icon="mdi:chevron-right" className="size-4" />
+						</ItemActions>
+					</a>
+				}
+			/>
 		</div>
 	);
 }
