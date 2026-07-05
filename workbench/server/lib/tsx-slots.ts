@@ -91,11 +91,59 @@ function* slots(sf: ts.SourceFile): Generator<[string, ts.JsxOpeningLikeElement]
 	yield* visit(sf);
 }
 
-/** Current classes for every data-slot in the file (first occurrence wins). */
+/** A named property's initializer from an object literal (unquoted identifier keys). */
+function objProp(obj: ts.ObjectLiteralExpression, name: string): ts.Expression | undefined {
+	for (const p of obj.properties) {
+		if (ts.isPropertyAssignment(p) && p.name.getText() === name) return p.initializer;
+	}
+	return undefined;
+}
+
+/** base-ui root pattern: `useRender({ props: mergeProps({ className }, props), state: { slot: "x" } })`.
+ *  There's no literal data-slot — the name is `state.slot`, classes are the className handed to
+ *  props / mergeProps. Register the slot so categorization sees the root (classes may be "" when the
+ *  className is a bare cva call — the model reads the cva base for it). */
+function useRenderSlots(sf: ts.SourceFile): Record<string, string> {
+	const out: Record<string, string> = {};
+	const visit = (node: ts.Node) => {
+		if (
+			ts.isCallExpression(node) &&
+			ts.isIdentifier(node.expression) &&
+			node.expression.text === "useRender" &&
+			node.arguments[0] &&
+			ts.isObjectLiteralExpression(node.arguments[0])
+		) {
+			const cfg = node.arguments[0];
+			const state = objProp(cfg, "state");
+			const slotExpr =
+				state && ts.isObjectLiteralExpression(state) ? objProp(state, "slot") : undefined;
+			const slot = slotExpr && ts.isStringLiteral(slotExpr) ? slotExpr.text : undefined;
+			if (slot && !(slot in out)) {
+				const props = objProp(cfg, "props");
+				let propObj: ts.ObjectLiteralExpression | undefined;
+				if (
+					props &&
+					ts.isCallExpression(props) &&
+					props.arguments[0] &&
+					ts.isObjectLiteralExpression(props.arguments[0])
+				)
+					propObj = props.arguments[0];
+				else if (props && ts.isObjectLiteralExpression(props)) propObj = props;
+				out[slot] = classesFromValue(propObj ? objProp(propObj, "className") : undefined);
+			}
+		}
+		ts.forEachChild(node, visit);
+	};
+	visit(sf);
+	return out;
+}
+
+/** Current classes for every slot: literal `data-slot` elements + base-ui `useRender` roots. */
 export function readSlots(source: string): Record<string, string> {
 	const sf = parse(source);
-	const out: Record<string, string> = {};
+	const out: Record<string, string> = useRenderSlots(sf);
 	for (const [slot, el] of slots(sf)) {
+		if (slot in out) continue;
 		const attr = classNameAttr(el.attributes);
 		out[slot] = attr ? readClasses(attr) : "";
 	}
