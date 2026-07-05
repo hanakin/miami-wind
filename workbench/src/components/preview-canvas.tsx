@@ -426,9 +426,7 @@ function Surfaces() {
 						Add to library
 					</div>
 					<Accordion
-						type="single"
-						collapsible
-						defaultValue="a"
+						defaultValue={["a"]}
 						className="rounded-md border border-border px-3"
 					>
 						<AccordionItem value="a" className="border-none">

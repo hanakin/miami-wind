@@ -173,7 +173,7 @@ export function EditingMenu({
 	return (
 		<div className="flex flex-col gap-1.5">
 			<span className="text-xs font-medium text-subtext0">Editing</span>
-			<Select value={value} onValueChange={change}>
+			<Select value={value} onValueChange={(v) => change(v ?? "")}>
 				<SelectTrigger className="h-8">
 					<SelectValue placeholder="Select a piece…" />
 				</SelectTrigger>
