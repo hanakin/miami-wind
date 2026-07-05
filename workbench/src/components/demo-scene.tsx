@@ -156,7 +156,7 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 	return (
 		<div data-preview data-exploded className="flex flex-col gap-8 p-6">
 			<style>{EXPLODED_CSS}</style>
-			<div ref={topRef} className="flex flex-wrap items-start gap-8">
+			<div ref={topRef} data-view="demo" className="flex flex-wrap items-start gap-8">
 				{openExample && (
 					<Section label="open">
 						<div data-demo="_open" className="flex flex-wrap items-start gap-5">
@@ -178,7 +178,9 @@ export function DemoScene({ name, sel }: { name: string; sel: Selection }) {
 			</div>
 
 			{filterKey && (
-				<Section label={filterLabel(sel, name)}>{renderFocus(focus, name, entries)}</Section>
+				<Section view="example" label={filterLabel(sel, name)}>
+					{renderFocus(focus, name, entries)}
+				</Section>
 			)}
 		</div>
 	);
@@ -215,9 +217,17 @@ function renderFocus(focus: Focus, name: string, entries: Demo[]): ReactNode {
 	return <p className="text-sm text-subtext0">Not present in these demos.</p>;
 }
 
-function Section({ label, children }: { label: string; children: ReactNode }) {
+function Section({
+	label,
+	children,
+	view,
+}: {
+	label: string;
+	children: ReactNode;
+	view?: "demo" | "example";
+}) {
 	return (
-		<div className="flex flex-col items-start gap-2">
+		<div data-view={view} className="flex flex-col items-start gap-2">
 			<span className="text-xs font-medium uppercase tracking-wide text-subtext0">{label}</span>
 			{children}
 		</div>

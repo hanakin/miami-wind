@@ -4,6 +4,8 @@ import { SourcePanel } from "~/components/component-views";
 import { CvaControls } from "~/components/cva-controls";
 import { DemoScene } from "~/components/demo-scene";
 import { EditorLayout } from "~/components/editor-layout";
+import { ReviewOverlay } from "~/components/review-overlay";
+import { ReviewPanel } from "~/components/review-panel";
 import {
 	LABEL_CONTROLS,
 	useComponentModel,
@@ -48,8 +50,12 @@ function ComponentEditor({ name }: { name: string }) {
 				controls={<CvaControls name={name} sel={sel} onSel={setSel} />}
 				preview={
 					<div className="flex h-full min-h-0 flex-col overflow-auto">
-						<DemoScene name={name} sel={sel} />
+						<div className="relative">
+							<DemoScene name={name} sel={sel} />
+							<ReviewOverlay component={name} />
+						</div>
 						{isCustom && <SourcePanel name={name} />}
+						<ReviewPanel component={name} />
 					</div>
 				}
 			/>

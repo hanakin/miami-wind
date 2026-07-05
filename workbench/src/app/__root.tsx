@@ -30,6 +30,7 @@ import {
 	useSaveAll,
 	useSaveSlots,
 } from "~/hooks/use-workbench-data";
+import { reviewStore, useReview } from "~/stores/review";
 import { themeDirty, themeStore, useTheme } from "~/stores/theme";
 import { useWorkbench, workbenchStore } from "~/stores/workbench";
 import { cssForModels, cssForSlots } from "~/utils/live-css";
@@ -138,6 +139,7 @@ function Navbar() {
 				<SceneTabs />
 			</div>
 			<div className="flex items-center gap-2">
+				<ReviewToggle />
 				<span className="text-sm text-subtext0">
 					{total > 0 ? `${total} unsaved` : "All saved"}
 				</span>
@@ -160,6 +162,34 @@ function Navbar() {
 				</button>
 			</div>
 		</header>
+	);
+}
+
+// Review-mode toggle: flips the annotation overlay on/off (mounted per component route) and shows the
+// running note count. Highlighted when on. Read-only tool — it never edits a component or demo.
+function ReviewToggle() {
+	const on = useReview((s) => s.on);
+	const count = useReview((s) => s.notes.length);
+	return (
+		<button
+			type="button"
+			onClick={() => reviewStore.getState().toggle()}
+			className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+				on
+					? "border-primary bg-primary text-primary-foreground"
+					: "border-border text-subtext hover:bg-interactive hover:text-text"
+			}`}
+		>
+			<Icon icon="mdi:comment-edit-outline" size={15} />
+			Review
+			{count > 0 && (
+				<span
+					className={`rounded-full px-1.5 text-xs ${on ? "bg-primary-foreground/20" : "bg-interactive"}`}
+				>
+					{count}
+				</span>
+			)}
+		</button>
 	);
 }
 
