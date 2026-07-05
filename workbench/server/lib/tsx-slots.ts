@@ -103,7 +103,7 @@ function objProp(obj: ts.ObjectLiteralExpression, name: string): ts.Expression |
  *  There's no literal data-slot — the name is `state.slot`, classes are the className handed to
  *  props / mergeProps. Register the slot so categorization sees the root (classes may be "" when the
  *  className is a bare cva call — the model reads the cva base for it). */
-function useRenderSlots(sf: ts.SourceFile): Record<string, string> {
+function renderRootSlots(sf: ts.SourceFile): Record<string, string> {
 	const out: Record<string, string> = {};
 	const visit = (node: ts.Node) => {
 		if (
@@ -141,7 +141,7 @@ function useRenderSlots(sf: ts.SourceFile): Record<string, string> {
 /** Current classes for every slot: literal `data-slot` elements + base-ui `useRender` roots. */
 export function readSlots(source: string): Record<string, string> {
 	const sf = parse(source);
-	const out: Record<string, string> = useRenderSlots(sf);
+	const out: Record<string, string> = renderRootSlots(sf);
 	for (const [slot, el] of slots(sf)) {
 		if (slot in out) continue;
 		const attr = classNameAttr(el.attributes);
