@@ -95,7 +95,7 @@ function RootLayout() {
 	}, []);
 
 	return (
-		<TooltipProvider delayDuration={200}>
+		<TooltipProvider delay={200}>
 			<div className="flex h-screen flex-col bg-background text-foreground">
 				<Navbar />
 				<main className="min-h-0 flex-1">
@@ -228,7 +228,7 @@ function ScopeSelect() {
 					? navigate({ to: "/" })
 					: v === "css"
 						? navigate({ to: "/css" })
-						: navigate({ to: "/components/$name", params: { name: v } })
+						: navigate({ to: "/components/$name", params: { name: v ?? "" } })
 			}
 		>
 			<SelectTrigger className="h-8 w-56">

@@ -6,9 +6,7 @@ import { Popover, PopoverTrigger } from "~/components/ui/popover";
 export function PopoverDemo() {
 	return (
 		<Popover>
-			<PopoverTrigger asChild>
-				<Button variant="outline">Open popover</Button>
-			</PopoverTrigger>
+			<PopoverTrigger render={<Button variant="outline">Open popover</Button>} />
 		</Popover>
 	);
 }

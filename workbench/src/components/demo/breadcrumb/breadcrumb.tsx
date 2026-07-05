@@ -21,19 +21,19 @@ export function BreadcrumbDemo() {
 		<Breadcrumb>
 			<BreadcrumbList>
 				<BreadcrumbItem>
-					<BreadcrumbLink asChild>
-						<a href="#">Home</a>
-					</BreadcrumbLink>
+					<BreadcrumbLink render={<a href="#">Home</a>} />
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />
 				<BreadcrumbItem>
 					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button size="icon-sm" variant="ghost">
-								<BreadcrumbEllipsis />
-								<span className="sr-only">Toggle menu</span>
-							</Button>
-						</DropdownMenuTrigger>
+						<DropdownMenuTrigger
+							render={
+								<Button size="icon-sm" variant="ghost">
+									<BreadcrumbEllipsis />
+									<span className="sr-only">Toggle menu</span>
+								</Button>
+							}
+						/>
 						<DropdownMenuContent align="start">
 							<DropdownMenuGroup>
 								<DropdownMenuItem>Documentation</DropdownMenuItem>
@@ -45,9 +45,7 @@ export function BreadcrumbDemo() {
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />
 				<BreadcrumbItem>
-					<BreadcrumbLink asChild>
-						<a href="#">Components</a>
-					</BreadcrumbLink>
+					<BreadcrumbLink render={<a href="#">Components</a>} />
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />
 				<BreadcrumbItem>

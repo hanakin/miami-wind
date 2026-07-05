@@ -42,7 +42,7 @@ export function InteractionMenu({
 	return (
 		<div className="flex flex-col gap-1.5">
 			<span className="text-xs font-medium text-subtext0">Interaction</span>
-			<Select value={value} onValueChange={onPick}>
+			<Select value={value} onValueChange={(v) => onPick(v ?? "")}>
 				<SelectTrigger className="h-8">
 					<SelectValue />
 				</SelectTrigger>

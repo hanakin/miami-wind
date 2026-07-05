@@ -17,19 +17,15 @@ export function NavigationMenuIndicatorDemo() {
 					<NavigationMenuContent>
 						<ul className="grid w-[300px] gap-2 p-2">
 							<li>
-								<NavigationMenuLink asChild>
-									<a href="#">Getting Started</a>
-								</NavigationMenuLink>
+								<NavigationMenuLink render={<a href="#">Getting Started</a>} />
 							</li>
 							<li>
-								<NavigationMenuLink asChild>
-									<a href="#">Installation</a>
-								</NavigationMenuLink>
+								<NavigationMenuLink render={<a href="#">Installation</a>} />
 							</li>
 						</ul>
 					</NavigationMenuContent>
+					<NavigationMenuIndicator />
 				</NavigationMenuItem>
-				<NavigationMenuIndicator />
 			</NavigationMenuList>
 		</NavigationMenu>
 	);

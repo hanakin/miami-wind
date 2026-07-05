@@ -133,7 +133,7 @@ function CreateToken() {
 					placeholder="value"
 					className="rounded-md border border-border bg-input px-2 py-1.5 font-mono text-xs text-text outline-none focus-visible:border-primary"
 				/>
-				<Select value={withUtilities} onValueChange={setWithUtilities}>
+				<Select value={withUtilities} onValueChange={(v) => setWithUtilities(v ?? "")}>
 					<SelectTrigger className="h-8">
 						<SelectValue />
 					</SelectTrigger>

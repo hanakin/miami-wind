@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertDialog as ADP } from "radix-ui";
+import { AlertDialog as ADP } from "@base-ui/react/alert-dialog";
 import { useState } from "react";
 import {
 	AlertDialogAction,
@@ -9,32 +9,30 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
+	AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
 import { Button } from "~/components/ui/button";
 
-// Content classNames copied from the vendored primitive (src/components/ui/alert-dialog.tsx) so the
-// force-mounted raw Overlay/Content carry the seed look for their slot.
-const ALERT_DIALOG_OVERLAY = "fixed inset-0 z-50 bg-black/50";
+// classNames copied from the vendored primitive (src/components/ui/alert-dialog.tsx) so the
+// keep-mounted raw Backdrop/Popup carry the seed look for their slot.
+const ALERT_DIALOG_OVERLAY =
+	"absolute inset-0 isolate z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs";
 const ALERT_DIALOG_CONTENT =
-	"group/alert-dialog-content fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 data-[size=default]:sm:max-w-lg";
+	"group/alert-dialog-content absolute top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-xl bg-popover p-6 text-popover-foreground ring-1 ring-foreground/10 outline-none data-[size=default]:sm:max-w-lg";
 
 export function AlertDialogOpen() {
 	const [host, setHost] = useState<HTMLDivElement | null>(null);
 	return (
 		<ADP.Root open>
-			<ADP.Trigger asChild>
-				<Button variant="outline">Show dialog</Button>
-			</ADP.Trigger>
-			<div ref={setHost} />
+			<AlertDialogTrigger render={<Button variant="outline">Show dialog</Button>} />
+			<div ref={setHost} className="relative min-h-[200px] w-full" />
 			{host && (
-				<ADP.Portal container={host}>
-					<ADP.Overlay data-slot="alert-dialog-overlay" className={ALERT_DIALOG_OVERLAY} />
-					<ADP.Content
-						forceMount
+				<ADP.Portal container={host} keepMounted>
+					<ADP.Backdrop data-slot="alert-dialog-overlay" className={ALERT_DIALOG_OVERLAY} />
+					<ADP.Popup
 						data-slot="alert-dialog-content"
 						data-size="default"
 						className={ALERT_DIALOG_CONTENT}
-						onEscapeKeyDown={(e) => e.preventDefault()}
 					>
 						<AlertDialogHeader>
 							<AlertDialogTitle>Delete file?</AlertDialogTitle>
@@ -44,7 +42,7 @@ export function AlertDialogOpen() {
 							<AlertDialogCancel>Cancel</AlertDialogCancel>
 							<AlertDialogAction>Delete</AlertDialogAction>
 						</AlertDialogFooter>
-					</ADP.Content>
+					</ADP.Popup>
 				</ADP.Portal>
 			)}
 		</ADP.Root>
