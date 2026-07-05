@@ -15,7 +15,7 @@ import { slotForCva } from "~/utils/live-css";
 
 // EditingMenu — the categorized "what piece do I edit" dropdown (editor rebuild, Stage 3).
 //
-// Renders the pre-baked model's five (six with Trigger) categories — Root · Trigger · Layout/Structure ·
+// Renders the pre-baked model's categories — Root · Render as · Trigger · Layout/Structure ·
 // Parts · Variants · Flags — with the plain name prominent and a dimmed `· namespace` trail. No CSS/
 // Tailwind terms surface. Derived entirely from the store, never a static template.
 //
@@ -96,6 +96,28 @@ export function EditingMenu({
 				],
 			});
 		}
+		// Render as — the root's element choice (base-ui `render` / old asChild). Each alternate (e.g. `a`)
+		// edits that element's `[<tag>]:` pass-through; the default element IS the Root above. Not a flag.
+		if (model.render) {
+			const sym = symbolFor(model.render.slot);
+			const rslot = model.render.slot;
+			push(
+				"render",
+				"Render as",
+				model.render.elements.map((el) => ({
+					value: `render:${el}`,
+					primary: el,
+					trail: `· ${trailNs(rslot)}`,
+					sel: sym
+						? {
+								type: "cva",
+								target: { kind: "context", context: el, prefix: `[${el}]:`, symbol: sym },
+							}
+						: { type: "slot", slot: rslot },
+					pieceKey: rslot,
+				})),
+			);
+		}
 		if (model.trigger) push("trigger", "Trigger", [slotEntry(model.trigger)]);
 		push("structure", "Layout / Structure", model.structure.map(slotEntry));
 		push("parts", "Parts", model.parts.map(slotEntry));
@@ -128,15 +150,8 @@ export function EditingMenu({
 			[...byFlag.values()].flatMap((uses) => {
 				const f = uses[0];
 				if (!f) return [];
-				const sym = symbolFor(f.namespace);
-				// "as link" edits the cva's [a]: pass-through; other flags edit the slot they sit on.
-				const sel: Selection =
-					f.name === "as link" && sym
-						? {
-								type: "cva",
-								target: { kind: "context", context: "a", prefix: "[a]:", symbol: sym },
-							}
-						: { type: "slot", slot: f.namespace };
+				// Flags edit the slot they sit on. ("as link" is no longer here — it's a Render-as element.)
+				const sel: Selection = { type: "slot", slot: f.namespace };
 				return [
 					{
 						value: `flag:${f.name}`,

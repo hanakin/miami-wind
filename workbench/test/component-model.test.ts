@@ -46,8 +46,10 @@ describe("component-model — item (the done reference)", () => {
 		expect(m.variants.find((v) => v.name === "outline")?.namespace).toBe("item");
 	});
 
-	it("Flags = as link (asChild → <a>, via the [a]: context)", () => {
-		expect(flagNames(m)).toContain("as link");
+	it("Render = the root can render as `a` (base-ui render / old asChild) — not a flag", () => {
+		expect(m.render?.slot).toBe("item");
+		expect(m.render?.elements).toContain("a");
+		expect(flagNames(m)).not.toContain("as link"); // it's a render-element change, not a flag
 	});
 });
 
