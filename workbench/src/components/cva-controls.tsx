@@ -1,9 +1,11 @@
 import { Icon } from "@registry-ui/icon";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { EditingMenu } from "~/components/editing-menu";
 import { Inspector } from "~/components/inspector";
+import { InteractionMenu } from "~/components/interaction-menu";
 import { useComponentModel } from "~/hooks/use-workbench-data";
-import { parseSurface, useWorkbench, workbenchStore } from "~/stores/workbench";
+import { useEditorModel } from "~/stores/editor-model";
+import { useWorkbench, workbenchStore } from "~/stores/workbench";
 import {
 	addAxis,
 	addOption,
@@ -13,38 +15,22 @@ import {
 	targetClass,
 } from "~/utils/cva-edit";
 import type { Selection } from "~/utils/editor-selection";
-import { cssForForced, slotForCva } from "~/utils/live-css";
+import { parseClasses } from "~/utils/tw-tokens";
 import type { CvaModel } from "../../server/lib/cva-codec";
 
-// The forced-state CSS rule for the focused target: paint its selected state's look (checked / active /
-// hover) unconditionally in the preview so you SEE it without the element being in that state. Reads
-// live classes from the store so it stays correct as you edit.
-function forcedRuleFor(sel: Selection, name: string, state: string): string {
-	if (!state) return "";
-	const st = workbenchStore.getState();
-	if (sel.type === "slot") {
-		const surf = parseSurface(sel.slot);
-		const selector = surf ? `.rdp-${surf.key}` : `[data-slot="${sel.slot}"]`;
-		return cssForForced(selector, st.slots[sel.slot] ?? "", state);
-	}
-	const t = sel.target;
-	if (t.kind === "context") return ""; // context targets ([a]/[&_svg]) aren't states
-	const model =
-		Object.values(st.models).find((m) => m.exportName === t.symbol) ??
-		Object.values(st.models).find(
-			(m) => m.name === name && (m.base.trim() !== "" || Object.keys(m.variants).length > 0),
-		);
-	if (!model) return "";
-	const slot = slotForCva(model.exportName);
-	if (t.kind === "option") {
-		return cssForForced(
-			`[data-slot="${slot}"][data-${t.axis}="${t.option}"]`,
-			model.variants[t.axis]?.[t.option] ?? "",
-			state,
-		);
-	}
-	return cssForForced(`[data-slot="${slot}"]`, model.base, state);
-}
+// Canonical class prefix for an interaction the piece doesn't have yet (an "Add" pick) — a present
+// state's prefix comes from its real classes instead (below), so hover-vs-`focus:` is never guessed.
+const STATE_PREFIX: Record<string, string> = {
+	default: "",
+	hover: "hover:",
+	focus: "focus:",
+	"focus-visible": "focus-visible:",
+	active: "active:",
+	disabled: "disabled:",
+	visited: "visited:",
+	checked: "data-[state=checked]:",
+	selected: "data-[state=selected]:",
+};
 
 export function CvaControls({
 	name,
@@ -55,41 +41,32 @@ export function CvaControls({
 	sel: Selection;
 	onSel: (sel: Selection) => void;
 }) {
-	const [state, setState] = useState("");
-	// The active piece id from the categorized Editing menu (Stage 3). Drives the menu's shown value;
-	// each pick also maps to the existing `sel` so the Inspector/Demo keep working (transition glue).
+	// The active piece from the categorized Editing menu (Stage 3): `piece` = the menu value, `pieceKey`
+	// = the store slot it edits (drives the Interaction menu + controls). Each pick also maps to the
+	// existing `sel` so the Inspector/Demo keep working (transition glue, removed with the old engine).
 	const [piece, setPiece] = useState("");
+	const [pieceKey, setPieceKey] = useState("");
+	// The active interaction from the Interaction menu (Stage 4). Resets to Default when the piece changes.
+	const [interaction, setInteraction] = useState("default");
 	const onPick = useCallback(
-		(value: string, next: Selection) => {
+		(value: string, next: Selection, key: string) => {
 			setPiece(value);
+			setPieceKey(key);
+			setInteraction("default");
 			onSel(next);
 		},
 		[onSel],
 	);
-	// Reset to Base when the target changes — a new target carries different states.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reset only on target change, not on edits
-	useEffect(() => setState(""), [sel]);
-	// Forced-state preview: a scoped <style> that paints the selected state's look on the focused target,
-	// repainted on every store change so it stays live as you edit that state's classes.
-	useEffect(() => {
-		let style = document.getElementById("forced-state") as HTMLStyleElement | null;
-		if (!style) {
-			style = document.createElement("style");
-			style.id = "forced-state";
-			document.head.appendChild(style);
-		}
-		const el = style;
-		const paint = () => {
-			el.textContent = forcedRuleFor(sel, name, state);
-		};
-		paint();
-		const unsub = workbenchStore.subscribe(paint);
-		return () => {
-			unsub();
-			el.remove();
-		};
-	}, [sel, name, state]);
 	const anyModel = useComponentModel(name);
+	// The pre-baked model — source for the interaction's real class prefix (Stage 5 reads values there).
+	const editorModel = useEditorModel((s) => s.baseline[name]);
+	// The class prefix the controls read/write at: a present state's REAL prefix (`focus:`,
+	// `data-[state=open]:`, `data-[disabled]:`) from its baked classes, else the canonical Add prefix.
+	const state = useMemo(() => {
+		const classes = editorModel?.classesByPieceState[pieceKey]?.[interaction];
+		const first = classes ? parseClasses(classes)[0] : undefined;
+		return first?.state ?? STATE_PREFIX[interaction] ?? "";
+	}, [editorModel, pieceKey, interaction]);
 	const modelsMap = useWorkbench((s) => s.models);
 	// Working classes for the selected surface, read live from the store (empty until first edit).
 	const slotBase = useWorkbench((s) =>
@@ -134,13 +111,19 @@ export function CvaControls({
 		<div className="flex flex-col gap-4 p-4">
 			<EditingMenu name={name} value={piece} onPick={onPick} />
 
+			<InteractionMenu
+				name={name}
+				pieceKey={pieceKey}
+				value={interaction}
+				onPick={setInteraction}
+			/>
+
 			<Inspector
 				value={value}
 				inherited={inherited}
 				onChange={onChange}
 				context={sel.type === "cva" && sel.target.kind === "context" ? sel.target.prefix : ""}
 				state={state}
-				onStateChange={setState}
 			/>
 
 			{hasCva && model && (

@@ -21,8 +21,6 @@ import {
 	readEffectiveColor,
 	removeRaw,
 	sizeMatch,
-	stateLabel,
-	statesIn,
 	swatchVar,
 } from "~/utils/tw-tokens";
 
@@ -85,7 +83,6 @@ export function Inspector({
 	onChange,
 	context = "",
 	state,
-	onStateChange,
 }: {
 	value: string;
 	/** Classes beneath the edited target (e.g. cva base when editing a variant) — for showing inherited colors. */
@@ -93,96 +90,67 @@ export function Inspector({
 	onChange: (v: string) => void;
 	/** A pass-through selector prefix (e.g. `[a]:`) so every control edits that context's utilities. */
 	context?: string;
-	/** The selected interaction state (`hover:`, `data-[state=checked]:`, …). Lifted so the preview can force it. */
+	/** The selected interaction's class prefix (`focus:`, `data-[state=open]:`, `""` for default), from
+	 *  the Interaction menu. Every control reads/writes at this prefix, so the values are the piece's
+	 *  true look for that state — not a runtime guess. */
 	state: string;
-	onStateChange: (s: string) => void;
 }) {
 	// Everything the controls read/write is scoped to context + interaction state, e.g. `[a]:hover:`.
 	const fullState = context + state;
 	const set = (match: (u: string) => boolean, util: string | null) =>
 		onChange(applyUtility(value, fullState, match, util));
 
-	// States aren't a fixed list — derive them from the target's real classes so every component's own
-	// states surface (checkbox → checked, tabs → active, accordion → open, …). Deduped by LABEL: common
-	// pseudos come first, but a REAL state owns its label (tabs' `data-[state=active]` wins "Active" over
-	// the `active:` pseudo), and two reals that read the same (label's group-data-[disabled] +
-	// peer-disabled → "Disabled") collapse to one.
-	const stateKeys = useMemo(() => {
-		const reals = [...statesIn(value), ...statesIn(inherited)];
-		const realLabels = new Set(reals.map(stateLabel));
-		const byLabel = new Map<string, string>([["Base", ""]]);
-		for (const k of ["hover:", "focus-visible:", "active:", "disabled:"]) {
-			if (!realLabels.has(stateLabel(k))) byLabel.set(stateLabel(k), k);
-		}
-		for (const k of reals) if (!byLabel.has(stateLabel(k))) byLabel.set(stateLabel(k), k);
-		return [...byLabel.values()];
-	}, [value, inherited]);
-
 	return (
-		<div className="flex flex-col gap-4">
-			<Field label="State">
-				<Select
-					value={state || "__base"}
-					onValueChange={(v) => onStateChange(v === "__base" ? "" : v)}
-				>
-					<SelectTrigger className="h-8">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						{stateKeys.map((k) => (
-							<SelectItem key={k || "__base"} value={k || "__base"}>
-								{stateLabel(k)}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</Field>
+		<div className="flex flex-col gap-3">
+			<Disclosure label="Color" open>
+				<ColorRow
+					label="Background"
+					prop="bg"
+					value={value}
+					inherited={inherited}
+					state={fullState}
+					onChange={onChange}
+				/>
+				<ColorRow
+					label="Text"
+					prop="text"
+					value={value}
+					inherited={inherited}
+					state={fullState}
+					onChange={onChange}
+				/>
+				<ColorRow
+					label="Border"
+					prop="border"
+					value={value}
+					inherited={inherited}
+					state={fullState}
+					onChange={onChange}
+				/>
+			</Disclosure>
 
-			<ColorRow
-				label="Background"
-				prop="bg"
-				value={value}
-				inherited={inherited}
-				state={fullState}
-				onChange={onChange}
-			/>
-			<ColorRow
-				label="Text"
-				prop="text"
-				value={value}
-				inherited={inherited}
-				state={fullState}
-				onChange={onChange}
-			/>
-			<ColorRow
-				label="Border"
-				prop="border"
-				value={value}
-				inherited={inherited}
-				state={fullState}
-				onChange={onChange}
-			/>
-
-			<div className="grid grid-cols-2 gap-3">
-				<SelectField
-					label="Border width"
-					value={findUtility(value, fullState, borderWMatch)}
-					options={BORDER_W}
-					onSelect={(u) => set(borderWMatch, u)}
-				/>
-				<SelectField
-					label="Radius"
-					value={findUtility(value, fullState, radiusMatch)}
-					options={RADIUS}
-					onSelect={(u) => set(radiusMatch, u)}
-				/>
-				<SelectField
-					label="Size"
-					value={findUtility(value, fullState, sizeMatch)}
-					options={SIZE}
-					onSelect={(u) => set(sizeMatch, u)}
-				/>
-			</div>
+			<Disclosure label="Box" open>
+				<div className="grid grid-cols-2 gap-3">
+					<SelectField
+						label="Border width"
+						value={findUtility(value, fullState, borderWMatch)}
+						options={BORDER_W}
+						onSelect={(u) => set(borderWMatch, u)}
+					/>
+					<SelectField
+						label="Radius"
+						value={findUtility(value, fullState, radiusMatch)}
+						options={RADIUS}
+						onSelect={(u) => set(radiusMatch, u)}
+					/>
+					<SelectField
+						label="Size"
+						value={findUtility(value, fullState, sizeMatch)}
+						options={SIZE}
+						onSelect={(u) => set(sizeMatch, u)}
+					/>
+				</div>
+			</Disclosure>
 
 			<Disclosure label="Typography & effects">
 				<div className="grid grid-cols-2 gap-3">
@@ -420,9 +388,17 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 	);
 }
 
-function Disclosure({ label, children }: { label: string; children: ReactNode }) {
+function Disclosure({
+	label,
+	children,
+	open = false,
+}: {
+	label: string;
+	children: ReactNode;
+	open?: boolean;
+}) {
 	return (
-		<details className="border-t border-border pt-3">
+		<details open={open} className="border-t border-border pt-3">
 			<summary className="cursor-pointer text-xs font-medium text-subtext0 transition-colors hover:text-text">
 				{label}
 			</summary>

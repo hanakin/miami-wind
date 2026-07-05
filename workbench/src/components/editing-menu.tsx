@@ -28,6 +28,7 @@ interface Entry {
 	primary: string; // the prominent plain name
 	trail?: string; // the dimmed "· namespace"
 	sel: Selection;
+	pieceKey: string; // the store slot key this entry edits (for the interaction menu + controls)
 }
 
 interface Group {
@@ -43,7 +44,7 @@ export function EditingMenu({
 }: {
 	name: string;
 	value: string;
-	onPick: (value: string, sel: Selection) => void;
+	onPick: (value: string, sel: Selection, pieceKey: string) => void;
 }) {
 	const model = useEditorModel((s) => s.baseline[name]);
 	// Live cvas for this component (stable map → memo filter, so the selector never returns a fresh
@@ -69,6 +70,7 @@ export function EditingMenu({
 			value: `slot:${slot}`,
 			primary: strip(slot),
 			sel: { type: "slot", slot },
+			pieceKey: slot,
 		});
 
 		const out: Group[] = [];
@@ -88,6 +90,7 @@ export function EditingMenu({
 								value: `root:${model.root}`,
 								primary: strip(model.root),
 								sel: { type: "cva", target: { kind: "base", symbol: sym } },
+								pieceKey: model.root,
 							}
 						: slotEntry(model.root),
 				],
@@ -109,6 +112,7 @@ export function EditingMenu({
 					sel: sym
 						? { type: "cva", target: { kind: "option", axis: v.axis, option: v.name, symbol: sym } }
 						: { type: "slot", slot: v.namespace },
+					pieceKey: v.namespace,
 				};
 			}),
 		);
@@ -139,6 +143,7 @@ export function EditingMenu({
 						primary: f.name,
 						trail: uses.length === 1 ? `· ${trailNs(f.namespace)}` : undefined,
 						sel,
+						pieceKey: f.namespace,
 					},
 				];
 			}),
@@ -153,14 +158,14 @@ export function EditingMenu({
 	useEffect(() => {
 		if (entries.length && !entries.some((e) => e.value === value)) {
 			const first = entries[0];
-			if (first) onPick(first.value, first.sel);
+			if (first) onPick(first.value, first.sel, first.pieceKey);
 		}
 	}, [entries, value, onPick]);
 
 	const change = useCallback(
 		(v: string) => {
 			const e = entries.find((x) => x.value === v);
-			if (e) onPick(e.value, e.sel);
+			if (e) onPick(e.value, e.sel, e.pieceKey);
 		},
 		[entries, onPick],
 	);
