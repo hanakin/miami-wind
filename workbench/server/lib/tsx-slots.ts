@@ -201,6 +201,36 @@ function spliceFor(el: ts.JsxOpeningLikeElement, sf: ts.SourceFile, classes: str
 	return { start: at, end: at, text: ` className={cn(${lit})}` };
 }
 
+/**
+ * Inject `data-slot="<slot>"` onto the JSX opening element located at `line:column` — the coordinate
+ * carried by the dev source-stamp (`data-mw-src`, 0-based, `getStart` of the opening element). This is
+ * the Exposure step: it promotes a raw, un-tagged node into an addressable slot. className is left
+ * untouched — the element keeps its classes and `spliceFor` handles them on the next style edit.
+ *
+ * Throws if `line:column` doesn't resolve to an opening element, or that element already has a slot.
+ */
+export function addSlotAt(source: string, line: number, column: number, slot: string): string {
+	const sf = parse(source);
+	let hit: ts.JsxOpeningLikeElement | undefined;
+	const visit = (node: ts.Node): void => {
+		if (hit) return;
+		if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+			const pos = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+			if (pos.line === line && pos.character === column) {
+				hit = node;
+				return;
+			}
+		}
+		ts.forEachChild(node, visit);
+	};
+	visit(sf);
+	if (!hit) throw new Error(`No JSX opening element at ${line}:${column}`);
+	if (slotName(hit.attributes) !== undefined) throw new Error("Element already has a data-slot");
+	// Insert right after the tag name (`<ChevronDownIcon` → `<ChevronDownIcon data-slot="…"`).
+	const at = hit.tagName.getEnd();
+	return source.slice(0, at) + ` data-slot=${JSON.stringify(slot)}` + source.slice(at);
+}
+
 /** Write the full class string for each given data-slot back into the source, idempotently. */
 export function writeSlots(source: string, edits: Record<string, string>): string {
 	const sf = parse(source);

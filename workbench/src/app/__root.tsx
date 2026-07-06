@@ -30,6 +30,7 @@ import {
 	useSaveAll,
 	useSaveSlots,
 } from "~/hooks/use-workbench-data";
+import { exposeStore, useExpose } from "~/stores/expose";
 import { reviewStore, useReview } from "~/stores/review";
 import { themeDirty, themeStore, useTheme } from "~/stores/theme";
 import { useWorkbench, workbenchStore } from "~/stores/workbench";
@@ -139,6 +140,7 @@ function Navbar() {
 				<SceneTabs />
 			</div>
 			<div className="flex items-center gap-2">
+				<ExposeToggle />
 				<ReviewToggle />
 				<span className="text-sm text-subtext0">
 					{total > 0 ? `${total} unsaved` : "All saved"}
@@ -189,6 +191,26 @@ function ReviewToggle() {
 					{count}
 				</span>
 			)}
+		</button>
+	);
+}
+
+// Expose-mode toggle: flips the exposure overlay on/off (mounted per component route). While on, click a
+// raw, un-tagged node in the preview to promote it to a data-slot the editor can style. Highlighted when on.
+function ExposeToggle() {
+	const on = useExpose((s) => s.on);
+	return (
+		<button
+			type="button"
+			onClick={() => exposeStore.getState().toggle()}
+			className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
+				on
+					? "border-primary bg-primary text-primary-foreground"
+					: "border-border text-subtext hover:bg-interactive hover:text-text"
+			}`}
+		>
+			<Icon icon="mdi:cursor-default-click-outline" size={15} />
+			Expose
 		</button>
 	);
 }

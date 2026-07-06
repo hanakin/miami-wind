@@ -4,6 +4,7 @@ import { SourcePanel } from "~/components/component-views";
 import { CvaControls } from "~/components/cva-controls";
 import { DemoScene } from "~/components/demo-scene";
 import { EditorLayout } from "~/components/editor-layout";
+import { ExposeOverlay } from "~/components/expose-overlay";
 import { ReviewOverlay } from "~/components/review-overlay";
 import { ReviewPanel } from "~/components/review-panel";
 import {
@@ -53,6 +54,7 @@ function ComponentEditor({ name }: { name: string }) {
 						<div className="relative">
 							<DemoScene name={name} sel={sel} />
 							<ReviewOverlay component={name} />
+							<ExposeOverlay component={name} />
 						</div>
 						{isCustom && <SourcePanel name={name} />}
 						<ReviewPanel component={name} />

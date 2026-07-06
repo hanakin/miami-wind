@@ -6,12 +6,14 @@ import { defineConfig } from "vite";
 import { customResolve } from "./plugin/custom-resolve";
 import { liveCva } from "./plugin/live-cva";
 import { sceneLoc } from "./plugin/scene-loc";
+import { srcStamp } from "./plugin/src-stamp";
 
 export default defineConfig({
 	plugins: [
 		customResolve(),
 		liveCva(),
 		sceneLoc(),
+		srcStamp(),
 		tanstackRouter({
 			target: "react",
 			routesDirectory: "./src/app",

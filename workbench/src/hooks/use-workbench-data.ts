@@ -196,6 +196,33 @@ export function useComponentSlots(name: string) {
 	return query;
 }
 
+/**
+ * Exposure: POST a clicked pixel's source-stamp + a user-supplied part name to promote that raw node to
+ * a data-slot. On success the component's source gains `data-slot="<name>-<part>"`; refresh the model so
+ * the new slot shows up in the Editing menu, and the slot classes so it's immediately editable.
+ */
+export function useExposeSlot(name: string) {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async (body: { src: string; part: string }) => {
+			const res = await client.api.components[":name"].expose.$post({
+				param: { name },
+				json: body,
+			});
+			if (!res.ok) {
+				const err = (await res.json()) as { error?: string };
+				throw new Error(err.error ?? `Expose failed (${res.status})`);
+			}
+			return res.json();
+		},
+		onSuccess: () => {
+			qc.invalidateQueries({ queryKey: ["models"] });
+			qc.invalidateQueries({ queryKey: ["components", name] });
+			qc.invalidateQueries({ queryKey: ["primitives"] });
+		},
+	});
+}
+
 export function useSlotDirtyCount(): number {
 	return useWorkbench((s) => dirtySlots(s).length);
 }
