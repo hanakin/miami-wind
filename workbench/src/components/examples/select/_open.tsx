@@ -12,7 +12,7 @@ const SELECT_CONTENT =
 export function SelectOpen() {
 	const [host, setHost] = useState<HTMLDivElement | null>(null);
 	return (
-		<SelectP.Root open value="a">
+		<SelectP.Root open value="a" modal={false}>
 			<SelectP.Trigger
 				data-slot="select-trigger"
 				className="flex w-44 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs outline-none"
@@ -21,7 +21,7 @@ export function SelectOpen() {
 			</SelectP.Trigger>
 			<div ref={setHost} />
 			{host && (
-				<SelectP.Portal container={host}>
+				<SelectP.Portal container={host} keepMounted>
 					{/* alignItemWithTrigger={false}: base-ui Select's default overlaps the selected item onto
 					    the trigger (native-<select> style), which measures + repositions in a loop inside the
 					    preview's force-`static` [data-exploded] layer → freeze. Off = position below, no loop. */}
