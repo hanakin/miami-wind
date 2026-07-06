@@ -21,7 +21,7 @@ export function SelectOpen() {
 			</SelectP.Trigger>
 			<div ref={setHost} />
 			{host && (
-				<SelectP.Portal container={host} keepMounted>
+				<SelectP.Portal container={host}>
 					{/* alignItemWithTrigger={false}: base-ui Select's default overlaps the selected item onto
 					    the trigger (native-<select> style), which measures + repositions in a loop inside the
 					    preview's force-`static` [data-exploded] layer → freeze. Off = position below, no loop. */}
