@@ -35,7 +35,7 @@ export default defineConfig({
 		dedupe: ["react", "react-dom", "@iconify/react"],
 	},
 	server: {
-		port: 5173,
+		port: 5175,
 		proxy: {
 			"/api": "http://localhost:3000",
 		},
