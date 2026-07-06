@@ -1,13 +1,32 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { type CvaModel, parseCva, serializeCva } from "../server/lib/cva-codec";
-import { CVA_DIR } from "../server/lib/registry-paths";
 
-const buttonSrc = readFileSync(join(CVA_DIR, "button.ts"), "utf8");
+// The codec is pure logic, so it's tested against a self-contained cva string — NOT a real
+// registry/customization file (those get reset when the base changes; a codec test must not depend on one).
+const buttonSrc = `import { cva } from "class-variance-authority";
+const button = cva(
+	"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium",
+	{
+		variants: {
+			variant: {
+				default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+				outline: "border bg-background shadow-xs hover:bg-accent",
+			},
+			size: {
+				default: "h-9 px-4 py-2",
+				sm: "h-8 gap-1.5 px-3",
+				lg: "h-10 px-6",
+				icon: "size-9",
+			},
+		},
+		defaultVariants: { variant: "default", size: "default" },
+	},
+);
+export { button as buttonVariants };
+`;
 
 describe("cva-codec", () => {
-	it("parses the real button.ts into a model", () => {
+	it("parses a button cva into a model", () => {
 		const m = parseCva(buttonSrc, "button");
 		expect(m.localName).toBe("button");
 		expect(m.exportName).toBe("buttonVariants");
@@ -18,7 +37,7 @@ describe("cva-codec", () => {
 		expect(m.compoundVariants).toEqual([]);
 	});
 
-	it("round-trips button.ts: parse → serialize → parse is stable", () => {
+	it("round-trips a button cva: parse → serialize → parse is stable", () => {
 		const a = parseCva(buttonSrc, "button");
 		const b = parseCva(serializeCva(a), "button");
 		expect(b).toEqual(a);
