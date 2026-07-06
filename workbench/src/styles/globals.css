@@ -3,6 +3,11 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
 
+/* Scan the sibling registry so classes used only in saved customizations (custom cvas + promoted
+   custom components) get compiled. Tailwind's auto-detection covers the workbench dir only; the
+   registry is out-of-tree, so without this a saved cva reaches the DOM but its utilities have no CSS. */
+@source "../../../registry/components/ui";
+
 /* ---------------------------------------------------------------------------
    Editor chrome — Miami Wind tokens the WORKBENCH UI itself uses (sidebar,
    controls, inspector). NOT the previewed components: primary/secondary/etc.
