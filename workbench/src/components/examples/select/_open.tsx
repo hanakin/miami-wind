@@ -22,7 +22,10 @@ export function SelectOpen() {
 			<div ref={setHost} />
 			{host && (
 				<SelectP.Portal container={host}>
-					<SelectP.Positioner className="isolate z-50" sideOffset={4}>
+					{/* alignItemWithTrigger={false}: base-ui Select's default overlaps the selected item onto
+					    the trigger (native-<select> style), which measures + repositions in a loop inside the
+					    preview's force-`static` [data-exploded] layer → freeze. Off = position below, no loop. */}
+					<SelectP.Positioner className="isolate z-50" sideOffset={4} alignItemWithTrigger={false}>
 						<SelectP.Popup data-slot="select-content" className={SELECT_CONTENT}>
 							<SelectP.List>
 								<SelectP.Group data-slot="select-group">
