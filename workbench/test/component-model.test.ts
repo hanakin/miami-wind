@@ -142,16 +142,41 @@ describe("component-model — interactions (derived from real classes, per piece
 		expect(addable(dm, "dropdown-menu-trigger")).toContain("active");
 	});
 
-	it("item root: focus-visible (ring) is the only real state — the [a]:hover: belongs to the as-link flag, not the plain item", () => {
+	it("item root: focus (the ring) is the only real state — `focus-visible:` folds to the Focus word; the [a]:hover: belongs to the as-link flag, not the plain item", () => {
 		const p = present(item, "item");
-		expect(p).toEqual(["default", "focus-visible"]);
+		expect(p).toEqual(["default", "focus"]);
 		expect(p).not.toContain("hover"); // [a]:hover:bg-accent/50 is scoped to the link, surfaced via `as link`
-		expect(item.classesByPieceState.item?.["focus-visible"]).toContain(
-			"focus-visible:ring-ring/50",
+		expect(item.classesByPieceState.item?.focus).toContain("focus-visible:ring-ring/50");
+		// focus is present (folded), so only the remaining core words are offered to Add — no `visited`.
+		expect(addable(item, "item")).toEqual(["hover", "active", "disabled"]);
+	});
+});
+
+describe("component-model — every engaged code-state translates to the `active` design word", () => {
+	// The two shapes base-ui uses for an on-state: aria-* shorthand (toggle's aria-pressed:) and
+	// data-[state=…] (a sub-trigger's data-[state=open]:). Both must bucket to the one `active` word,
+	// backed by their real class so the write-back targets the right selector.
+	const toggle = model("toggle");
+	const dm = model("dropdown-menu");
+
+	it("aria-pressed: (the toggle on-state) is present as `active` — the exact dropped-state bug, fixed", () => {
+		expect(present(toggle, "toggle")).toEqual(
+			expect.arrayContaining(["hover", "active", "disabled"]),
 		);
-		// hover is now a core Add offer (no longer wrongly present); visited too, since item can be a link.
-		expect(addable(item, "item")).toEqual(
-			expect.arrayContaining(["hover", "focus", "active", "disabled", "visited"]),
+		expect(toggle.classesByPieceState.toggle?.active).toContain("aria-pressed:bg-muted");
+	});
+
+	it("a data-* open-state (the sub-trigger's data-open:) also buckets to `active`", () => {
+		expect(present(dm, "dropdown-menu-sub-trigger")).toContain("active");
+		expect(dm.classesByPieceState["dropdown-menu-sub-trigger"]?.active).toContain("data-open:");
+	});
+
+	it("the menu only ever surfaces the five design words — never a raw code-state", () => {
+		const words = new Set(
+			Object.values(toggle.interactionsByPiece)
+				.flat()
+				.map((i) => i.name),
 		);
+		for (const w of words) expect(["default", "hover", "focus", "active", "disabled"]).toContain(w);
 	});
 });

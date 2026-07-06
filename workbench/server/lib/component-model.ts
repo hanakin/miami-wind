@@ -39,7 +39,9 @@ export interface Render {
 }
 
 export interface Interaction {
-	/** plain mechanism name — `default` (resting) · hover · focus · focus-visible · active · disabled · visited · checked */
+	/** design word (shown to the user) — one of `default` (resting) · hover · focus · active · disabled.
+	 *  Every underlying code-state is translated to one of these; `active` is the catch-all for any
+	 *  engaged/on/open/selected/pressed state. */
 	name: string;
 	/** true = the piece really carries this state's classes (edit it); false = a core state offered to Add (create) */
 	present: boolean;
@@ -167,7 +169,7 @@ function isStructure(name: string, slot: string): boolean {
  *  statePart, which drops them) — because a context/variant scope is exactly what re-attributes a
  *  state away from the plain piece. */
 const SEGMENT = /[a-zA-Z0-9-]+(?:\[[^\]]*\])?:|\[(?:[^[\]]|\[[^\]]*\])*\]:/g;
-/** Core states offered to Add on any element; +visited for links. Others show only when present. */
+/** The fixed design words offered to Add on any element. Others show only when the piece has them. */
 const CORE = ["hover", "focus", "active", "disabled"] as const;
 /** A utility that only animates — a state made entirely of these carries nothing the controls edit. */
 const ANIM = /^(animate-|fade-(in|out)|zoom-(in|out)|slide-(in|out)|spin$|pulse$|bounce$|ping$)/;
@@ -175,8 +177,12 @@ const ANIM = /^(animate-|fade-(in|out)|zoom-(in|out)|slide-(in|out)|spin$|pulse$
 /** True when a segment SCOPES the class to a flag/variant/context (`[a]:`, `data-[variant=…]:`,
  *  `data-[inset]:`, `data-[size=…]:`) rather than to an interaction. A scoped state belongs to that
  *  flag/variant, never the plain piece — so its hover/focus is surfaced only when you select it. */
-/** data-attr words that are interaction STATES (radix/vega set these) — never flags/scopes. */
-const STATE_ATTR = /^(open|closed|active|disabled|checked|selected|on|indeterminate)$/;
+/** data-/aria-attr words that are interaction STATES (radix/vega/base-ui set these) — never flags/scopes. */
+const STATE_ATTR =
+	/^(open|closed|active|disabled|checked|selected|on|pressed|expanded|indeterminate)$/;
+/** The subset of STATE_ATTR words (and `data-[state=…]` values) that read as engaged → the "Active"
+ *  catch-all. Excludes the transient/off states (`closed`, `indeterminate`) and `disabled`. */
+const ENGAGED = /^(open|active|on|pressed|checked|selected|expanded)$/;
 
 function isScope(seg: string): boolean {
 	if (seg.startsWith("[")) return true; // arbitrary-selector context: [a]: (as link), [&_svg]: (icon)
@@ -189,37 +195,39 @@ function isScope(seg: string): boolean {
 		return !(key === "state" || key === "disabled" || key === "checked" || key === "selected");
 	}
 	// vega / Tailwind v4 boolean-attr shorthand (no brackets): data-inset scopes (a flag); data-open /
-	// data-disabled are interaction states, not scopes.
-	const b = s.match(/^(?:not-)?(?:group-|peer-)?data-([a-z-]+)$/);
+	// aria-pressed / data-disabled are interaction states, not scopes.
+	const b = s.match(/^(?:not-)?(?:group-|peer-)?(?:data|aria)-([a-z-]+)$/);
 	if (b) return !STATE_ATTR.test(b[1] ?? "");
 	return false; // a pseudo (hover:) or an env word (dark:, sm:) — not a scope
 }
 
-/** The interaction a single (non-scope) segment maps to, or null if it isn't one. */
+/** The design word a single (non-scope) segment maps to, or null if it isn't a steady state. Only ever
+ *  returns one of `hover` / `focus` / `active` / `disabled` — every engaged/on/open/selected/pressed
+ *  code-state collapses to the `active` catch-all (the user never sees the underlying selector). */
 function segmentInteraction(seg: string): string | null {
 	const s = seg.replace(/:$/, "");
-	if (s === "hover" || s === "focus" || s === "focus-visible") return s;
-	if (s === "active" || s === "disabled" || s === "visited") return s;
+	if (s === "hover") return "hover";
+	if (s === "focus" || s === "focus-visible") return "focus";
+	if (s === "active" || s === "visited") return "active"; // engaged / visited link → Active
+	if (s === "disabled") return "disabled";
 	const m = s.match(/^(?:group-|peer-)?(?:data|aria)-\[([a-z-]+)(?:=([a-z0-9-]+))?\]$/);
 	if (m) {
 		const [, key, val] = m;
 		if (key === "state") {
-			if (val === "open" || val === "active") return "active";
-			if (val === "checked" || val === "on") return "checked";
-			if (val === "selected") return "selected";
+			if (val === "disabled") return "disabled";
+			if (val && ENGAGED.test(val)) return "active"; // open / checked / on / selected / … → Active
 			return null; // closed / indeterminate / … — transient, nothing steady to edit
 		}
-		if (key === "disabled" || key === "checked" || key === "selected") return key;
+		if (key === "disabled") return "disabled";
+		if (key && ENGAGED.test(key)) return "active"; // aria-[pressed] / data-[checked] / … → Active
 		return null;
 	}
-	// vega / Tailwind v4 boolean-attr shorthand: data-open → active, data-disabled → disabled, …
-	const b = s.match(/^(?:group-|peer-)?data-([a-z-]+)$/);
+	// vega / Tailwind v4 / base-ui boolean-attr shorthand: aria-pressed / data-open → active, … → disabled
+	const b = s.match(/^(?:group-|peer-)?(?:data|aria)-([a-z-]+)$/);
 	if (b) {
-		const key = b[1];
-		if (key === "open" || key === "active") return "active";
-		if (key === "checked" || key === "on") return "checked";
-		if (key === "selected") return "selected";
+		const key = b[1] ?? "";
 		if (key === "disabled") return "disabled";
+		if (ENGAGED.test(key)) return "active";
 	}
 	return null;
 }
@@ -238,14 +246,17 @@ function classInteraction(state: string): string | null {
 }
 
 /** Group a piece's own classes into `{ interaction: classes }` and the ordered interaction list. */
-function deriveInteractions(
-	own: string,
-	isLink: boolean,
-): { interactions: Interaction[]; classesByState: Record<string, string> } {
+function deriveInteractions(own: string): {
+	interactions: Interaction[];
+	classesByState: Record<string, string>;
+} {
 	const groups: Record<string, string[]> = {};
 	for (const t of parseClasses(own)) {
 		const which = classInteraction(t.state);
 		if (which === null) continue; // scoped by a flag/variant/context, or pure env — not a plain state
+		// ponytail: if a piece carries two *different* engaged prefixes (e.g. aria-pressed: and
+		// data-[state=on]:) they both land in `active` and an edit targets the first — acceptable; a real
+		// component styles its on-state one way. Split by prefix only if that ever bites.
 		const group = groups[which] ?? [];
 		group.push(t.raw);
 		groups[which] = group;
@@ -265,7 +276,7 @@ function deriveInteractions(
 		present.unshift("default");
 	}
 
-	const core = isLink ? [...CORE, "visited"] : [...CORE];
+	const core = [...CORE];
 	const interactions: Interaction[] = [{ name: "default", present: true }];
 	for (const s of present) if (s !== "default") interactions.push({ name: s, present: true });
 	for (const c of core) if (!present.includes(c)) interactions.push({ name: c, present: false });
@@ -341,13 +352,12 @@ export function readComponentModel(source: string, name: string): ComponentModel
 
 	// Interactions per piece — from its OWN classes (cva base for a cva'd slot, else its slot className).
 	const cvaBySlot = new Map(cvas.map((c) => [c.slot, c]));
-	const isLink = render?.elements.includes("a") ?? false;
 	const interactionsByPiece: Record<string, Interaction[]> = {};
 	const classesByPieceState: Record<string, Record<string, string>> = {};
 	for (const piece of [root, trigger, ...structure, ...parts]) {
 		if (!piece) continue;
 		const own = cvaBySlot.get(piece)?.base ?? slots[piece] ?? "";
-		const { interactions, classesByState } = deriveInteractions(own, isLink && piece === root);
+		const { interactions, classesByState } = deriveInteractions(own);
 		interactionsByPiece[piece] = interactions;
 		classesByPieceState[piece] = classesByState;
 	}

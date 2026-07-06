@@ -23,13 +23,9 @@ import type { CvaModel } from "../../server/lib/cva-codec";
 const STATE_PREFIX: Record<string, string> = {
 	default: "",
 	hover: "hover:",
-	focus: "focus:",
-	"focus-visible": "focus-visible:",
+	focus: "focus-visible:",
 	active: "active:",
 	disabled: "disabled:",
-	visited: "visited:",
-	checked: "data-[state=checked]:",
-	selected: "data-[state=selected]:",
 };
 
 export function CvaControls({

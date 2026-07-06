@@ -16,11 +16,8 @@ import { useEditorModel } from "~/stores/editor-model";
 //   Add              — the core states it doesn't have yet (create one)
 // Real mechanism names, no CSS terms, no animation-only states (the reader already dropped those).
 
-const LABEL: Record<string, string> = {
-	default: "Default",
-	"focus-visible": "Focus visible",
-};
-const label = (n: string) => LABEL[n] ?? n.charAt(0).toUpperCase() + n.slice(1);
+// The four design words (+ default) all capitalize cleanly, so the generic path covers them.
+const label = (n: string) => n.charAt(0).toUpperCase() + n.slice(1);
 
 export function InteractionMenu({
 	name,
