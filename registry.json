@@ -139,9 +139,7 @@
 					"--secondary-transparent": "var(--color-cyan-transparent)"
 				}
 			},
-			"css": {
-				"@layer base": "button:where(button, [role=\"button\"]):not([disabled]) {\n\t\tcursor: pointer;\n\t}"
-			}
+			"css": {}
 		},
 		{
 			"name": "mw-cva",
@@ -167,6 +165,22 @@
 			"files": [
 				{
 					"path": "registry/components/ui/icon.tsx",
+					"type": "registry:ui"
+				}
+			]
+		},
+		{
+			"name": "select",
+			"type": "registry:ui",
+			"title": "Select",
+			"description": "Miami Wind custom base-ui select. One delta from vanilla: the popup width is content-max (w-fit, floored at the trigger width) instead of locked to the trigger width — the menu is always as wide as its widest item.",
+			"dependencies": [
+				"@base-ui/react",
+				"lucide-react"
+			],
+			"files": [
+				{
+					"path": "registry/components/ui/select.tsx",
 					"type": "registry:ui"
 				}
 			]

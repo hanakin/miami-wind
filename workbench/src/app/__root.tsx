@@ -234,7 +234,7 @@ function ScopeSelect() {
 			<SelectTrigger className="h-8 w-56">
 				<SelectValue />
 			</SelectTrigger>
-			<SelectContent className="w-fit min-w-(--anchor-width)">
+			<SelectContent>
 				<SelectItem value="theme">Theme</SelectItem>
 				<SelectItem value="css">Custom CSS</SelectItem>
 				{customNames.length > 0 && (

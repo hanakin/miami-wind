@@ -194,7 +194,7 @@ export function EditingMenu({
 				<SelectTrigger className="h-8">
 					<SelectValue placeholder="Select a piece…" />
 				</SelectTrigger>
-				<SelectContent className="w-fit min-w-(--anchor-width)">
+				<SelectContent>
 					{groups.map((g) => (
 						<SelectGroup key={g.key}>
 							<SelectLabel>{g.label}</SelectLabel>
