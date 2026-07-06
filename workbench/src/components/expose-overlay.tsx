@@ -2,46 +2,46 @@ import { type MouseEvent, type PointerEvent, useRef, useState } from "react";
 import { useExposeSlot } from "~/hooks/use-workbench-data";
 import { useExpose } from "~/stores/expose";
 
-// The capture layer for Expose mode. Covers the preview; when expose is on it outlines the raw,
-// un-tagged node under the cursor and on click promotes it to a data-slot. The exposable set is exactly
-// the elements carrying the dev source-stamp (data-mw-src, authored in an owned component) that don't
-// already have a data-slot — so the highlight IS the "you can expose this" affordance, no code names shown.
-const SEL = "[data-mw-src]:not([data-slot])";
+// The capture layer for Expose mode. Covers the preview; on hover it outlines the raw, un-tagged node
+// under the cursor and on click promotes it to a data-slot. The exposable set is exactly the elements
+// carrying the dev source-stamp (data-mw-src, authored in an owned component) that aren't a data-slot
+// yet — so the highlight IS the "you can expose this" affordance, same as Review's hover outline.
+//
+// Hit-testing is rect-based, NOT elementsFromPoint: the targets (icons, indicators) render as <svg>
+// with `pointer-events-none`, and elementsFromPoint skips both SVG and pointer-events:none nodes — so
+// the actual exposure targets can never be hit that way. Instead we pick the smallest exposable box
+// under the cursor. ponytail: querySelectorAll per move is fine for the workbench's small preview DOM.
+const SEL = "[data-preview] [data-mw-src]:not([data-slot])";
+
+type Box = { top: number; left: number; width: number; height: number };
 
 export function ExposeOverlay({ component }: { component: string }) {
 	const on = useExpose((s) => s.on);
 	const expose = useExposeSlot(component);
 	const layerRef = useRef<HTMLDivElement>(null);
-	const [hover, setHover] = useState<{
-		top: number;
-		left: number;
-		width: number;
-		height: number;
-	} | null>(null);
+	const [hover, setHover] = useState<Box | null>(null);
 
 	if (!on) return null;
 
-	// The topmost preview element under the point, skipping our own overlay + its children.
-	const resolve = (x: number, y: number): HTMLElement | null => {
-		const layer = layerRef.current;
-		const el = document
-			.elementsFromPoint(x, y)
-			.find(
-				(e): e is HTMLElement =>
-					e instanceof HTMLElement &&
-					e !== layer &&
-					!layer?.contains(e) &&
-					!!e.closest("[data-preview]"),
-			);
-		return el ?? null;
+	// The smallest (deepest) exposable element whose box contains the point — ignores pointer-events.
+	const pick = (x: number, y: number): Element | null => {
+		let best: Element | null = null;
+		let bestArea = Number.POSITIVE_INFINITY;
+		for (const el of document.querySelectorAll(SEL)) {
+			const r = el.getBoundingClientRect();
+			if (r.width === 0 || r.height === 0) continue;
+			if (x < r.left || x > r.right || y < r.top || y > r.bottom) continue;
+			const area = r.width * r.height;
+			if (area < bestArea) {
+				best = el;
+				bestArea = area;
+			}
+		}
+		return best;
 	};
 
-	// Nearest exposable node (stamped, not yet slotted) at/above the resolved pixel.
-	const target = (x: number, y: number): HTMLElement | null =>
-		resolve(x, y)?.closest<HTMLElement>(SEL) ?? null;
-
 	const onMove = (e: PointerEvent<HTMLDivElement>) => {
-		const el = target(e.clientX, e.clientY);
+		const el = pick(e.clientX, e.clientY);
 		const layer = layerRef.current;
 		if (!el || !layer) {
 			setHover(null);
@@ -53,8 +53,7 @@ export function ExposeOverlay({ component }: { component: string }) {
 	};
 
 	const onClick = (e: MouseEvent<HTMLDivElement>) => {
-		const el = target(e.clientX, e.clientY);
-		const src = el?.dataset.mwSrc;
+		const src = pick(e.clientX, e.clientY)?.getAttribute("data-mw-src");
 		if (!src) return;
 		const part = window.prompt("Name this part (lowercase, e.g. icon)")?.trim();
 		if (!part) return;
