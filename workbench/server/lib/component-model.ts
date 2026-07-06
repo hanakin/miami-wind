@@ -30,6 +30,14 @@ export interface Flag {
 	namespace: string;
 }
 
+/** The root's render-element choice (base-ui `render` prop; radix's old asChild). Not a flag — it swaps
+ *  the element the root renders as. `elements` are the alternates beyond the default (e.g. `["a"]` when
+ *  the cva carries `[a]:` link styling). Selecting one edits that element's `[<tag>]:` pass-through. */
+export interface Render {
+	slot: string;
+	elements: string[];
+}
+
 export interface Interaction {
 	/** plain mechanism name — `default` (resting) · hover · focus · focus-visible · active · disabled · visited · checked */
 	name: string;
@@ -49,6 +57,8 @@ export interface ComponentModel {
 	parts: string[];
 	variants: Variant[];
 	flags: Flag[];
+	/** the root's render-element choice (div default + alternates like `a`), or null if it can't swap */
+	render: Render | null;
 	/** per DOM piece: its real interactions (present) + the core states it could add (present:false) */
 	interactionsByPiece: Record<string, Interaction[]>;
 	/** per piece × interaction: the raw class substring carrying that state — what the controls read/edit */
@@ -311,10 +321,19 @@ export function readComponentModel(source: string, name: string): ComponentModel
 			}
 		}
 	}
-	// asChild → an "as link" flag when the root carries an `[a]:` context — which for a cva component
-	// lives in the cva BASE, not the slot's literal className.
-	const linkSurface = [root ? (slots[root] ?? "") : "", ...cvas.map((c) => c.base)].join(" ");
-	if (/\[a\]:/.test(linkSurface)) flags.push({ name: "as link", namespace: root ?? name });
+	// Render element: the root can render as a different tag (base-ui `render`, old asChild). Its
+	// alternates are the bare element-tag contexts in the root's classes — `[a]:` (link), `[button]:` …
+	// — as opposed to descendant contexts like `[&_svg]:`. NOT a flag: it swaps the root's element.
+	const rootSurface = [root ? (slots[root] ?? "") : "", ...cvas.map((c) => c.base)].join(" ");
+	const renderEls = [
+		...new Set(
+			[...rootSurface.matchAll(/\[([a-z][a-z0-9]*)\]:/g)]
+				.map((m) => m[1])
+				.filter((x): x is string => x !== undefined),
+		),
+	];
+	const render: Render | null =
+		root && renderEls.length ? { slot: root, elements: renderEls } : null;
 
 	// Parts: DOM pieces that aren't Root/Trigger/Structure. (Own-classes is implicit — a class-less
 	// element still has a cva or is editable; icon/image aren't slots at all, so they never land here.)
@@ -322,7 +341,7 @@ export function readComponentModel(source: string, name: string): ComponentModel
 
 	// Interactions per piece — from its OWN classes (cva base for a cva'd slot, else its slot className).
 	const cvaBySlot = new Map(cvas.map((c) => [c.slot, c]));
-	const isLink = flags.some((f) => f.name === "as link");
+	const isLink = render?.elements.includes("a") ?? false;
 	const interactionsByPiece: Record<string, Interaction[]> = {};
 	const classesByPieceState: Record<string, Record<string, string>> = {};
 	for (const piece of [root, trigger, ...structure, ...parts]) {
@@ -341,6 +360,7 @@ export function readComponentModel(source: string, name: string): ComponentModel
 		parts,
 		variants,
 		flags,
+		render,
 		interactionsByPiece,
 		classesByPieceState,
 	};

@@ -41,25 +41,32 @@ export function SidebarDemo() {
 										</SidebarMenuButton>
 										<SidebarMenuSub>
 											<SidebarMenuSubItem>
-												<SidebarMenuSubButton asChild>
-													<a href="#">
-														<span>History</span>
-													</a>
-												</SidebarMenuSubButton>
+												<SidebarMenuSubButton
+													render={
+														<a href="#">
+															<span>History</span>
+														</a>
+													}
+												/>
 											</SidebarMenuSubItem>
 											<SidebarMenuSubItem>
-												<SidebarMenuSubButton asChild isActive>
-													<a href="#">
-														<span>Starred</span>
-													</a>
-												</SidebarMenuSubButton>
+												<SidebarMenuSubButton
+													isActive
+													render={
+														<a href="#">
+															<span>Starred</span>
+														</a>
+													}
+												/>
 											</SidebarMenuSubItem>
 											<SidebarMenuSubItem>
-												<SidebarMenuSubButton asChild>
-													<a href="#">
-														<span>Settings</span>
-													</a>
-												</SidebarMenuSubButton>
+												<SidebarMenuSubButton
+													render={
+														<a href="#">
+															<span>Settings</span>
+														</a>
+													}
+												/>
 											</SidebarMenuSubItem>
 										</SidebarMenuSub>
 									</SidebarMenuItem>
@@ -92,28 +99,34 @@ export function SidebarDemo() {
 							<SidebarGroupContent>
 								<SidebarMenu>
 									<SidebarMenuItem>
-										<SidebarMenuButton asChild>
-											<a href="#">
-												<Icon icon="mdi:vector-square" />
-												<span>Design Engineering</span>
-											</a>
-										</SidebarMenuButton>
+										<SidebarMenuButton
+											render={
+												<a href="#">
+													<Icon icon="mdi:vector-square" />
+													<span>Design Engineering</span>
+												</a>
+											}
+										/>
 									</SidebarMenuItem>
 									<SidebarMenuItem>
-										<SidebarMenuButton asChild>
-											<a href="#">
-												<Icon icon="mdi:chart-pie" />
-												<span>Sales &amp; Marketing</span>
-											</a>
-										</SidebarMenuButton>
+										<SidebarMenuButton
+											render={
+												<a href="#">
+													<Icon icon="mdi:chart-pie" />
+													<span>Sales &amp; Marketing</span>
+												</a>
+											}
+										/>
 									</SidebarMenuItem>
 									<SidebarMenuItem>
-										<SidebarMenuButton asChild>
-											<a href="#">
-												<Icon icon="mdi:map-outline" />
-												<span>Travel</span>
-											</a>
-										</SidebarMenuButton>
+										<SidebarMenuButton
+											render={
+												<a href="#">
+													<Icon icon="mdi:map-outline" />
+													<span>Travel</span>
+												</a>
+											}
+										/>
 									</SidebarMenuItem>
 								</SidebarMenu>
 							</SidebarGroupContent>

@@ -365,7 +365,7 @@ export function MarketingScene() {
 						<h2 className="text-center text-3xl font-bold tracking-tight text-text">
 							Frequently Asked Questions
 						</h2>
-						<Accordion type="single" collapsible defaultValue="q1" className="mt-10 w-full">
+						<Accordion defaultValue={["q1"]} className="mt-10 w-full">
 							{faqs.map((faq) => (
 								<AccordionItem key={faq.id} value={faq.id}>
 									<AccordionTrigger className="text-base text-text">

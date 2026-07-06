@@ -35,13 +35,15 @@ export function InputGroupButtonDemo() {
 			</InputGroup>
 			<InputGroup className="[--radius:9999px]">
 				<Popover>
-					<PopoverTrigger asChild>
-						<InputGroupAddon>
-							<InputGroupButton variant="secondary" size="icon-xs">
-								<Icon icon="mdi:information-outline" />
-							</InputGroupButton>
-						</InputGroupAddon>
-					</PopoverTrigger>
+					<PopoverTrigger
+						render={
+							<InputGroupAddon>
+								<InputGroupButton variant="secondary" size="icon-xs">
+									<Icon icon="mdi:information-outline" />
+								</InputGroupButton>
+							</InputGroupAddon>
+						}
+					/>
 					<PopoverContent align="start" className="flex flex-col gap-1 rounded-xl text-sm">
 						<p className="font-medium">Your connection is not secure.</p>
 						<p>You should not enter any sensitive information on this site.</p>

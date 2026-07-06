@@ -114,22 +114,26 @@ export function ColorControl({
 			)}
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<button type="button" aria-label="Color picker" className={ICON_BTN}>
-						<Icon icon="mdi:eyedropper-variant" size={14} />
-					</button>
-				</PopoverTrigger>
+				<PopoverTrigger
+					render={
+						<button type="button" aria-label="Color picker" className={ICON_BTN}>
+							<Icon icon="mdi:eyedropper-variant" size={14} />
+						</button>
+					}
+				/>
 				<PopoverContent className="w-auto p-3" align="end">
 					<HexColorPicker color={hex} onChange={onHex} />
 				</PopoverContent>
 			</Popover>
 
 			<Popover>
-				<PopoverTrigger asChild>
-					<button type="button" aria-label="Token menu" className={ICON_BTN}>
-						<Icon icon="mdi:palette-swatch" size={14} />
-					</button>
-				</PopoverTrigger>
+				<PopoverTrigger
+					render={
+						<button type="button" aria-label="Token menu" className={ICON_BTN}>
+							<Icon icon="mdi:palette-swatch" size={14} />
+						</button>
+					}
+				/>
 				<PopoverContent className="max-h-80 w-56 overflow-x-hidden overflow-y-auto p-1" align="end">
 					{allowNone && (
 						<MenuRow

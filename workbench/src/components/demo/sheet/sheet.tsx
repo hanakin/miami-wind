@@ -6,9 +6,7 @@ import { Sheet, SheetTrigger } from "~/components/ui/sheet";
 export function SheetDemo() {
 	return (
 		<Sheet>
-			<SheetTrigger asChild>
-				<Button variant="outline">Open</Button>
-			</SheetTrigger>
+			<SheetTrigger render={<Button variant="outline">Open</Button>} />
 		</Sheet>
 	);
 }

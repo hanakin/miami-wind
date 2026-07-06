@@ -80,9 +80,10 @@ export function NavigationMenuDemo() {
 					</NavigationMenuContent>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-						<a href="#">Docs</a>
-					</NavigationMenuLink>
+					<NavigationMenuLink
+						className={navigationMenuTriggerStyle()}
+						render={<a href="#">Docs</a>}
+					/>
 				</NavigationMenuItem>
 			</NavigationMenuList>
 		</NavigationMenu>
@@ -97,14 +98,16 @@ function ListItem({
 }: React.ComponentPropsWithoutRef<"li"> & { href: string }) {
 	return (
 		<li {...props}>
-			<NavigationMenuLink asChild>
-				<a href={href}>
-					<div className="flex flex-col gap-1 text-sm">
-						<div className="leading-none font-medium">{title}</div>
-						<div className="line-clamp-2 text-muted-foreground">{children}</div>
-					</div>
-				</a>
-			</NavigationMenuLink>
+			<NavigationMenuLink
+				render={
+					<a href={href}>
+						<div className="flex flex-col gap-1 text-sm">
+							<div className="leading-none font-medium">{title}</div>
+							<div className="line-clamp-2 text-muted-foreground">{children}</div>
+						</div>
+					</a>
+				}
+			/>
 		</li>
 	);
 }

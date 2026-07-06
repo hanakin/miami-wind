@@ -139,9 +139,7 @@
 					"--secondary-transparent": "var(--color-cyan-transparent)"
 				}
 			},
-			"css": {
-				"@layer base": "button:where(button, [role=\"button\"]):not([disabled]) {\n\t\tcursor: pointer;\n\t}"
-			}
+			"css": {}
 		},
 		{
 			"name": "mw-cva",
@@ -172,78 +170,19 @@
 			]
 		},
 		{
-			"name": "button",
-			"type": "registry:file",
-			"title": "Button variants (cva)",
-			"description": "Miami Wind button variants. The shadcn button component is vanilla (from shadcn's own registry); this ships only the cva layer. Pink primary, cyan secondary, error destructive; pointer cursor, visible hover/active, no ring.",
-			"registryDependencies": [
-				"hanakin/miami-wind/theme",
-				"hanakin/miami-wind/mw-cva"
-			],
-			"dependencies": [
-				"class-variance-authority"
-			],
-			"files": [
-				{
-					"path": "registry/components/ui/cva/button.ts",
-					"type": "registry:file",
-					"target": "~/components/ui/cva/button.ts"
-				}
-			]
-		},
-		{
-			"name": "registry",
-			"type": "registry:item",
-			"title": "Miami Wind (all)",
-			"description": "Aggregate: installs the whole Miami Wind set — conventions, theme, mw-cva, icon, button (cva), command, and dropdown-menu. This is what the scaffolder's bin runs.",
-			"registryDependencies": [
-				"hanakin/miami-wind/conventions",
-				"hanakin/miami-wind/theme",
-				"hanakin/miami-wind/mw-cva",
-				"hanakin/miami-wind/icon",
-				"hanakin/miami-wind/button",
-				"hanakin/miami-wind/command",
-				"hanakin/miami-wind/dropdown-menu"
-			]
-		},
-		{
-			"name": "command",
+			"name": "select",
 			"type": "registry:ui",
-			"title": "Command",
-			"description": "Miami Wind command — customized primitive (full source).",
-			"registryDependencies": [
-				"hanakin/miami-wind/theme"
-			],
-			"files": [
-				{
-					"path": "registry/components/ui/command.tsx",
-					"type": "registry:ui",
-					"target": "~/components/ui/command.tsx"
-				}
-			],
+			"title": "Select",
+			"description": "Miami Wind custom base-ui select. One delta from vanilla: the popup width is content-max (w-fit, floored at the trigger width) instead of locked to the trigger width — the menu is always as wide as its widest item.",
 			"dependencies": [
-				"cmdk",
+				"@base-ui/react",
 				"lucide-react"
-			]
-		},
-		{
-			"name": "dropdown-menu",
-			"type": "registry:ui",
-			"title": "Dropdown Menu",
-			"description": "Miami Wind dropdown-menu — customized primitive (full source).",
-			"registryDependencies": [
-				"hanakin/miami-wind/theme"
 			],
 			"files": [
 				{
-					"path": "registry/components/ui/dropdown-menu.tsx",
-					"type": "registry:ui",
-					"target": "~/components/ui/dropdown-menu.tsx"
+					"path": "registry/components/ui/select.tsx",
+					"type": "registry:ui"
 				}
-			],
-			"dependencies": [
-				"lucide-react",
-				"radix-ui"
 			]
 		}
 	]

@@ -14,17 +14,13 @@ export function BreadcrumbSeparatorDemo() {
 		<Breadcrumb>
 			<BreadcrumbList>
 				<BreadcrumbItem>
-					<BreadcrumbLink asChild>
-						<a href="/">Home</a>
-					</BreadcrumbLink>
+					<BreadcrumbLink render={<a href="/">Home</a>} />
 				</BreadcrumbItem>
 				<BreadcrumbSeparator>
 					<Icon icon="mdi:circle-small" />
 				</BreadcrumbSeparator>
 				<BreadcrumbItem>
-					<BreadcrumbLink asChild>
-						<a href="/components">Components</a>
-					</BreadcrumbLink>
+					<BreadcrumbLink render={<a href="/components">Components</a>} />
 				</BreadcrumbItem>
 				<BreadcrumbSeparator>
 					<Icon icon="mdi:circle-small" />
