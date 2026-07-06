@@ -96,28 +96,6 @@ export function EditingMenu({
 				],
 			});
 		}
-		// Render as — the root's element choice (base-ui `render` / old asChild). Each alternate (e.g. `a`)
-		// edits that element's `[<tag>]:` pass-through; the default element IS the Root above. Not a flag.
-		if (model.render) {
-			const sym = symbolFor(model.render.slot);
-			const rslot = model.render.slot;
-			push(
-				"render",
-				"Render as",
-				model.render.elements.map((el) => ({
-					value: `render:${el}`,
-					primary: el,
-					trail: `· ${trailNs(rslot)}`,
-					sel: sym
-						? {
-								type: "cva",
-								target: { kind: "context", context: el, prefix: `[${el}]:`, symbol: sym },
-							}
-						: { type: "slot", slot: rslot },
-					pieceKey: rslot,
-				})),
-			);
-		}
 		if (model.trigger) push("trigger", "Trigger", [slotEntry(model.trigger)]);
 		push("structure", "Layout / Structure", model.structure.map(slotEntry));
 		push("parts", "Parts", model.parts.map(slotEntry));
@@ -163,6 +141,30 @@ export function EditingMenu({
 				];
 			}),
 		);
+
+		// Render as — the root's element choice (base-ui `render` / old asChild). Last, where the old "as
+		// link" flag lived. Each alternate (e.g. `a`) edits that element's `[<tag>]:` pass-through; the
+		// default element IS the Root above. Not a flag.
+		if (model.render) {
+			const sym = symbolFor(model.render.slot);
+			const rslot = model.render.slot;
+			push(
+				"render",
+				"Render as",
+				model.render.elements.map((el) => ({
+					value: `render:${el}`,
+					primary: el,
+					trail: `· ${trailNs(rslot)}`,
+					sel: sym
+						? {
+								type: "cva",
+								target: { kind: "context", context: el, prefix: `[${el}]:`, symbol: sym },
+							}
+						: { type: "slot", slot: rslot },
+					pieceKey: rslot,
+				})),
+			);
+		}
 
 		return out;
 	}, [model, cvas, name]);
