@@ -20,7 +20,6 @@ import {
 	parseClasses,
 	readEffectiveColor,
 	removeRaw,
-	sizeMatch,
 	swatchVar,
 } from "~/utils/tw-tokens";
 
@@ -58,14 +57,6 @@ const CURSOR: Opt[] = [
 	["Default", "cursor-default"],
 	["Not allowed", "cursor-not-allowed"],
 	["Wait", "cursor-wait"],
-];
-const SIZE: Opt[] = [
-	["4", "size-4"],
-	["5", "size-5"],
-	["6", "size-6"],
-	["8", "size-8"],
-	["10", "size-10"],
-	["Full", "size-full"],
 ];
 
 const radiusMatch = (u: string) =>
@@ -142,12 +133,6 @@ export function Inspector({
 						value={findUtility(value, fullState, radiusMatch)}
 						options={RADIUS}
 						onSelect={(u) => set(radiusMatch, u)}
-					/>
-					<SelectField
-						label="Size"
-						value={findUtility(value, fullState, sizeMatch)}
-						options={SIZE}
-						onSelect={(u) => set(sizeMatch, u)}
 					/>
 				</div>
 			</Disclosure>
