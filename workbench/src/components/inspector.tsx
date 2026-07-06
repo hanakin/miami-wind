@@ -256,7 +256,7 @@ function SelectField({
 				<SelectTrigger className="h-8">
 					<SelectValue placeholder="—" />
 				</SelectTrigger>
-				<SelectContent>
+				<SelectContent className="w-fit min-w-(--anchor-width)">
 					<SelectItem value="__none">—</SelectItem>
 					{options.map(([l, u]) => (
 						<SelectItem key={u} value={u}>

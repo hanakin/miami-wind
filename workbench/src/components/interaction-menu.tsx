@@ -46,7 +46,7 @@ export function InteractionMenu({
 				<SelectTrigger className="h-8">
 					<SelectValue />
 				</SelectTrigger>
-				<SelectContent>
+				<SelectContent className="w-fit min-w-(--anchor-width)">
 					<SelectGroup>
 						<SelectLabel>In this component</SelectLabel>
 						{present.map((i) => (

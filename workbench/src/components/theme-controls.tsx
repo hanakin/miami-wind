@@ -137,7 +137,7 @@ function CreateToken() {
 					<SelectTrigger className="h-8">
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent className="w-fit min-w-(--anchor-width)">
 						<SelectItem value="yes">var + utilities</SelectItem>
 						<SelectItem value="no">var only</SelectItem>
 					</SelectContent>
