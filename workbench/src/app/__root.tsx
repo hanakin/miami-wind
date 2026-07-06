@@ -10,6 +10,7 @@ import {
 import { useEffect, useMemo } from "react";
 import { demoComponentNames } from "~/components/demo-scene";
 import { SceneTabs } from "~/components/scene-tabs";
+import { Button } from "~/components/ui/button";
 import {
 	Select,
 	SelectContent,
@@ -145,23 +146,13 @@ function Navbar() {
 				<span className="text-sm text-subtext0">
 					{total > 0 ? `${total} unsaved` : "All saved"}
 				</span>
-				<button
-					type="button"
-					disabled={total === 0}
-					onClick={onReset}
-					className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm text-subtext transition-colors hover:bg-interactive hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
-				>
+				<Button variant="outline" size="sm" disabled={total === 0} onClick={onReset}>
 					Reset
-				</button>
-				<button
-					type="button"
-					disabled={total === 0 || pending}
-					onClick={onSave}
-					className="flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-bright-pink disabled:cursor-not-allowed disabled:opacity-50"
-				>
+				</Button>
+				<Button size="sm" disabled={total === 0 || pending} onClick={onSave}>
 					<Icon icon="mdi:content-save-outline" size={15} />
 					{pending ? "Saving…" : "Save"}
-				</button>
+				</Button>
 			</div>
 		</header>
 	);
@@ -173,25 +164,21 @@ function ReviewToggle() {
 	const on = useReview((s) => s.on);
 	const count = useReview((s) => s.notes.length);
 	return (
-		<button
-			type="button"
+		<Button
+			variant={on ? "default" : "outline"}
+			size="sm"
 			onClick={() => reviewStore.getState().toggle()}
-			className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-				on
-					? "border-primary bg-primary text-primary-foreground"
-					: "border-border text-subtext hover:bg-interactive hover:text-text"
-			}`}
 		>
 			<Icon icon="mdi:comment-edit-outline" size={15} />
 			Review
 			{count > 0 && (
 				<span
-					className={`rounded-full px-1.5 text-xs ${on ? "bg-primary-foreground/20" : "bg-interactive"}`}
+					className={`rounded-full px-1.5 text-xs ${on ? "bg-primary-foreground/20" : "bg-muted"}`}
 				>
 					{count}
 				</span>
 			)}
-		</button>
+		</Button>
 	);
 }
 
@@ -200,18 +187,14 @@ function ReviewToggle() {
 function ExposeToggle() {
 	const on = useExpose((s) => s.on);
 	return (
-		<button
-			type="button"
+		<Button
+			variant={on ? "default" : "outline"}
+			size="sm"
 			onClick={() => exposeStore.getState().toggle()}
-			className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-				on
-					? "border-primary bg-primary text-primary-foreground"
-					: "border-border text-subtext hover:bg-interactive hover:text-text"
-			}`}
 		>
 			<Icon icon="mdi:cursor-default-click-outline" size={15} />
 			Expose
-		</button>
+		</Button>
 	);
 }
 
