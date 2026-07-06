@@ -20,7 +20,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
+import { Separator } from "~/components/ui/separator";
 import { Toaster } from "~/components/ui/sonner";
+import { Toggle } from "~/components/ui/toggle";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { useSaveTheme, useThemeData } from "~/hooks/use-theme-data";
 import {
@@ -141,12 +143,17 @@ function Navbar() {
 				<SceneTabs />
 			</div>
 			<div className="flex items-center gap-2">
+				{/* Mode toggles — flip a preview mode on/off (per component route). */}
 				<ExposeToggle />
 				<ReviewToggle />
-				<span className="text-sm text-subtext0">
+
+				<Separator orientation="vertical" className="mx-1 h-6" />
+
+				{/* Save cluster — dirty status, then its actions. Reset discards unsaved work (destructive). */}
+				<span className="text-sm tabular-nums text-muted-foreground">
 					{total > 0 ? `${total} unsaved` : "All saved"}
 				</span>
-				<Button variant="outline" size="sm" disabled={total === 0} onClick={onReset}>
+				<Button variant="destructive" size="sm" disabled={total === 0} onClick={onReset}>
 					Reset
 				</Button>
 				<Button size="sm" disabled={total === 0 || pending} onClick={onSave}>
@@ -159,42 +166,40 @@ function Navbar() {
 }
 
 // Review-mode toggle: flips the annotation overlay on/off (mounted per component route) and shows the
-// running note count. Highlighted when on. Read-only tool — it never edits a component or demo.
+// running note count. A real toggle (aria-pressed) — read-only, it never edits a component or demo.
 function ReviewToggle() {
 	const on = useReview((s) => s.on);
 	const count = useReview((s) => s.notes.length);
 	return (
-		<Button
-			variant={on ? "default" : "outline"}
+		<Toggle
+			variant="outline"
 			size="sm"
-			onClick={() => reviewStore.getState().toggle()}
+			pressed={on}
+			onPressedChange={() => reviewStore.getState().toggle()}
 		>
 			<Icon icon="mdi:comment-edit-outline" size={15} />
 			Review
 			{count > 0 && (
-				<span
-					className={`rounded-full px-1.5 text-xs ${on ? "bg-primary-foreground/20" : "bg-muted"}`}
-				>
-					{count}
-				</span>
+				<span className="rounded-full bg-foreground/10 px-1.5 text-xs tabular-nums">{count}</span>
 			)}
-		</Button>
+		</Toggle>
 	);
 }
 
 // Expose-mode toggle: flips the exposure overlay on/off (mounted per component route). While on, click a
-// raw, un-tagged node in the preview to promote it to a data-slot the editor can style. Highlighted when on.
+// raw, un-tagged node in the preview to promote it to a data-slot the editor can style. A real toggle.
 function ExposeToggle() {
 	const on = useExpose((s) => s.on);
 	return (
-		<Button
-			variant={on ? "default" : "outline"}
+		<Toggle
+			variant="outline"
 			size="sm"
-			onClick={() => exposeStore.getState().toggle()}
+			pressed={on}
+			onPressedChange={() => exposeStore.getState().toggle()}
 		>
 			<Icon icon="mdi:cursor-default-click-outline" size={15} />
 			Expose
-		</Button>
+		</Toggle>
 	);
 }
 
