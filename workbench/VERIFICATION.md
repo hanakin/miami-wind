@@ -37,8 +37,8 @@ expect(screen.queryByText(/Not present/)).toBeNull(); // every choice shows
 ## Unit tests (Vitest)
 
 ### FEW — fewest demos, no authored demo code
-Pack the component's own demo pieces (icon, avatar, action button) into as **few** demo files as
-cover the requirement set. Pieces are **moved and merged**, never authored new. The plain
+Start from shadcn's own demos for the component. Pack their small pieces (icon, avatar, action
+button) into as **few** demo files as cover the requirement set. Pieces are **moved and merged**, never authored new. The plain
 single-instance demo stays as-is. No `<name>-icon` / `-variant` / `-states` showcase files.
 
 *Catches:* showcase-file sprawl and hand-written demo markup. (No-new-code is also confirmed by LOOK.)
@@ -50,13 +50,13 @@ files, no parameterized demo factories.
 *Catches:* kitchen-sink files and demo factories that hide coverage.
 
 ### BASE — plain component first; user changes layered, not baked
-Demos are built against the **plain installed component**: the vendored `components/ui/<name>.tsx`
-matches the base component it was generated from (base-ui / nova), unmodified. The user's registry
-overrides layer on top of the finished demos — intentional, never "corrected" back, never baked into
-the base demo early.
+Demos are built against the **plain shadcn component** (the base-ui variant): the vendored
+`components/ui/<name>.tsx` matches shadcn's source, unmodified. Nova's style lives in the separate
+cva / theme layer, not in the component file. The user's registry overrides layer on top of the
+finished demos — intentional, never "corrected" back, never baked into the base demo early.
 
 ```ts
-expect(vendored("<name>")).toMatchBase(); // equals the base-ui/nova source; overrides sit on top
+expect(vendored("<name>")).toMatchShadcn(); // equals shadcn's base-ui source; overrides + nova style layered on
 ```
 
 *Catches:* demos built against an already-customized component, or overrides baked in too early.
@@ -72,7 +72,7 @@ expect(classesShown(slot)).toEqual(allClassesOn(element));
 *Catches:* a partial class list that silently hides selectors from editing.
 
 ### STRUCT — the demo is structurally complete
-A demo carries the containment its slots need to read, even when the component's own demo omits it.
+A demo carries the containment its slots need to read, even when shadcn's own demo omits it.
 `field` / `form` are the case: shown grouped visually but never wrapped in code, so a faithful port is
 a flat, uncontained slew and the slots don't read. Add the missing structure (containers only — never
 invented content).
@@ -99,21 +99,22 @@ for (const target of whatTheEditorCanTarget(component))
 *Catches:* a target the editor exposes but no demo surfaces.
 
 ### LOOK — the demo matches the installed component
-Screenshot-compare each demo to the **installed component rendered directly** — base-ui / nova under
-the Miami Wind theme, **not** upstream shadcn.com. Content, borders, icon boxes, spacing. Two stages,
-because pieces move when demos consolidate:
-- **Stage 1:** each demo, straight from the component's own demo material, matches the installed component.
-- **Stage 2:** the consolidated demos add **no new code** — every line traces to a stage-1 source.
+We **grab from shadcn's demos** as the source (the shadcn page carries both the radix and base-ui
+versions — use base-ui), but render with **nova style** — a slight visual difference from shadcn's
+own. So the visual reference is the **installed component rendered directly**, not shadcn.com.
+Compare content, borders, icon boxes, spacing. Two stages, because pieces move when demos consolidate:
+- **Stage 1:** each demo, grabbed straight from shadcn, matches the installed component.
+- **Stage 2:** the consolidated demos add **no new code** — every line traces to a stage-1 grab.
 
 ```ts
-expect(diff(grab, installedRender)).toBeLessThan(THRESHOLD); // matches the installed component
-expect(everyLine(final)).toComeFrom(sources);                // no new code
+expect(diff(grab, installedRender)).toBeLessThan(THRESHOLD); // grab from shadcn == installed (nova-styled) component
+expect(everyLine(final)).toComeFrom(grabs);                  // no new code
 ```
 
 *Catches:* a demo that distorts the component, or consolidation that quietly authored markup.
 
-> **Baseline check (base-ui / nova):** the reference is the **installed** component, not upstream
-> shadcn — the base and theme differ, so an upstream pixel compare would fail for the wrong reason.
+> **Nova-style note:** demos come from shadcn (the source); nova restyles slightly, so compare to the
+> installed nova-styled component, not shadcn.com — an upstream pixel compare would fail for the wrong reason.
 > The threshold + baseline need confirming once real base-ui/nova renders exist (currently untested).
 
 ### STYLE — no sloppy styling
