@@ -112,7 +112,7 @@ expect(everyLine(final)).toComeFrom(sources);                // no new code
 
 *Catches:* a demo that distorts the component, or consolidation that quietly authored markup.
 
-> ⚠ **Baseline check (base-ui / nova):** the reference is the **installed** component, not upstream
+> **Baseline check (base-ui / nova):** the reference is the **installed** component, not upstream
 > shadcn — the base and theme differ, so an upstream pixel compare would fail for the wrong reason.
 > The threshold + baseline need confirming once real base-ui/nova renders exist (currently untested).
 
