@@ -14,7 +14,7 @@ This file is the source of truth. The rubric mirrors it visually in **§10 Verif
 - **The gate is `bun run check`** (Biome + tsc + Vitest). The UI checks run under Playwright
   (`playwright-core` + Chrome are available; reuse the `/tmp/wb-*.mjs` pattern). The suites are
   built per the **verification test plan** (`plans/verification-test-plan.md`) and then gate every
-  component through both demo passes (rubric §13–§14).
+  component's demos.
 - **Feedback is additive.** New checks agreed later get appended to the right group here and
   reflected in the rubric's §10 — the IDs (`LIVE`, `SLOT`, …) are stable.
 
@@ -239,9 +239,9 @@ Enforced: UI — edit the label's affordance via the editor; confirm it applies 
 | --- | --- | --- |
 | GATE | review | every commit (`bun run check`) |
 | LOG | review | per component, in its §13 ledger |
-| FEW · ONE · BASE · CLS · STRUCT | unit (Vitest) | verification test plan; gates each component in both demo passes (rubric §14) |
-| COV · LOOK · STYLE · PICK · STATE · LIVE · SLOT · SHOW · WIDE · SYNC · AFFORD | ui (Playwright) | verification test plan; gates each component in both demo passes |
+| FEW · ONE · BASE · CLS · STRUCT | unit (Vitest) | verification test plan; gates each component's demos |
+| COV · LOOK · STYLE · PICK · STATE · LIVE · SLOT · SHOW · WIDE · SYNC · AFFORD | ui (Playwright) | verification test plan; gates each component's demos |
 
-The editor capabilities the UI checks exercise ship with the engine (rubric §14 stages): force-state
+The editor capabilities the UI checks exercise ship with the engine: force-state
 (STATE), force-open (SHOW), per-part slots (SLOT / CLS), the edit→save→reload loop (LIVE), and
 label↔control-as-one-unit (AFFORD). The tests themselves are authored in the verification test plan.
