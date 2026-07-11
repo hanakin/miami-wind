@@ -72,16 +72,17 @@ expect(classesShown(slot)).toEqual(allClassesOn(element));
 *Catches:* a partial class list that silently hides selectors from editing.
 
 ### STRUCT — the demo is structurally complete
-A demo carries the containment its slots need to read, even when shadcn's own demo omits it.
-`field` / `form` are the case: shown grouped visually but never wrapped in code, so a faithful port is
-a flat, uncontained slew and the slots don't read. Add the missing structure (containers only — never
-invented content).
+A demo carries the containment its slots need to read — **never a lone atom** (G5). Render each piece
+with the structure it needs: a transparent `item` wants a group with separators; `field` / `form` want
+their card / container wrappers. shadcn often groups pieces only visually and never wraps them in code,
+so a faithful port is a flat, uncontained slew and the slots don't read. Add the missing structure
+(containers only — never invented content).
 
 ```ts
-expect(demoTree(field)).toContainStructure(expectedWrappers); // cards/groups present, nesting reads
+expect(demoTree(component)).toContainStructure(neededContainers(component)); // slots read in context, no lone atoms
 ```
 
-*Catches:* uncontained ports whose slots have no context to read in.
+*Catches:* any lone-atom demo whose slots have no surrounding structure to read in (not just `field`/`form`).
 
 ### DEF — the default demo is the top-left one
 The base file `demo/<name>/<name>.tsx` sorts first (localeCompare) and is the component's default
@@ -167,9 +168,12 @@ button padding; something stretched that shouldn't be; an icon where a button be
 
 ### PICK — every dropdown choice shows the right thing
 Walk **every** Editing-dropdown choice: each slot shows its piece, each cva option its view, each
-context its element. Nothing shows empty, "Not present", wrong, or made-up.
+context its element. Nothing shows empty, "Not present", wrong, or made-up. The choice list is **built
+from the model** (the same source as COV), so a variant with no `data-variant` to spotlight — e.g.
+`alert` — still appears and stays editable.
 
 ```ts
+expect(dropdown.choices()).toEqual(whatTheEditorCanTarget(component)); // built from the model — incl no-data-variant variants
 for (const choice of dropdown.choices()) {
   await pick(choice);
   expect(preview).not.toShow("Not present");
@@ -177,7 +181,7 @@ for (const choice of dropdown.choices()) {
 }
 ```
 
-*Catches:* a dropdown choice that resolves to nothing or the wrong element; a cva out of sync.
+*Catches:* a dropdown choice that resolves to nothing or the wrong element; a cva out of sync; a no-`data-variant` variant (e.g. `alert`) dropped from the list.
 
 ### STATE — every state shows and can be edited
 The editor **forces** each state — pseudo (hover / focus / active / disabled) and real
