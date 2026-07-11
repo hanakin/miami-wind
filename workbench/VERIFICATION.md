@@ -4,8 +4,8 @@ The acceptance contract for the workbench. It defines what **"done"** means — 
 editor itself (the "engine") and for each component's demos. Every stage of the rework is
 gated by the relevant checks below; a component or engine change is not done until they pass.
 
-This file is the source of truth. The rubric mirrors it visually in **§10 Verification**
-(`plans/html/rubric.html`). When the two disagree, this file wins — update it first, then §10.
+This file is the source of truth. The rubric mirrors it visually in **§11 Verification**
+(`plans/html/rubric.html`). When the two disagree, this file wins — update it first, then §11.
 
 ## How it's used
 
@@ -16,7 +16,7 @@ This file is the source of truth. The rubric mirrors it visually in **§10 Verif
   built per the **verification test plan** (`plans/verification-test-plan.md`) and then gate every
   component's demos.
 - **Feedback is additive.** New checks agreed later get appended to the right group here and
-  reflected in the rubric's §10 — the IDs (`LIVE`, `SLOT`, …) are stable.
+  reflected in the rubric's §11 — the IDs (`LIVE`, `SLOT`, …) are stable.
 
 Terms (`slot`, `cva`, `context`, `demo`, `requirement set`, `deviation`, `resolved component`) are
 the rubric's vocabulary; this file assumes them.
@@ -238,7 +238,7 @@ Enforced: UI — edit the label's affordance via the editor; confirm it applies 
 | Check | Kind | When |
 | --- | --- | --- |
 | GATE | review | every commit (`bun run check`) |
-| LOG | review | per component, in its §13 ledger |
+| LOG | review | per component, in its §14 ledger |
 | FEW · ONE · BASE · CLS · STRUCT | unit (Vitest) | verification test plan; gates each component's demos |
 | COV · LOOK · STYLE · PICK · STATE · LIVE · SLOT · SHOW · WIDE · SYNC · AFFORD | ui (Playwright) | verification test plan; gates each component's demos |
 
