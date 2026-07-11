@@ -83,6 +83,48 @@ expect(demoTree(field)).toContainStructure(expectedWrappers); // cards/groups pr
 
 *Catches:* uncontained ports whose slots have no context to read in.
 
+### DEF — the default demo is the top-left one
+The base file `demo/<name>/<name>.tsx` sorts first (localeCompare) and is the component's default
+view — the plain, one-instance demo, usually shadcn's first (G3).
+
+```ts
+const files = demoFiles(name).sort();          // localeCompare
+expect(files[0]).toBe(`${name}.tsx`);          // base sorts first
+expect(defaultView(name)).toBe(`${name}.tsx`); // = the top-left view
+```
+
+*Catches:* a variant or facet demo landing as the default view instead of the plain base.
+
+### PORT — the porting swaps are applied
+Every demo ported from shadcn applies the standing swaps: UI imports point at `~/components/ui/<name>`
+(G8); every icon renders through our `Icon` component — never lucide, never a built-in icon primitive,
+and **never with a size set** (G9); images use a plain `<img>`, never `next/image` (G10).
+
+```ts
+const src = readDemo(file);
+expect(src).not.toMatch(/from ["']lucide-react["']/);     // Icon component only
+expect(src).not.toMatch(/from ["']next\/image["']/);      // plain <img>
+expect(uiImports(src)).toMatchPath(/~\/components\/ui\//); // swapped paths
+expect(iconSizeProps(src)).toEqual([]);                   // no size on Icon
+```
+
+*Catches:* a lucide/built-in icon, a sized icon, a `next/image`, or an unswapped import path in a demo.
+
+### FOLD — states fold into the five interaction words
+The reader collapses every engaged code-state into the five hard-set words: `visited:` and engaged
+`aria-*` / `data-[state=…]` (open / checked / on / selected / pressed) fold into **Active**; `disabled`
+/ `aria-disabled` / `data-disabled` into **disabled**. The Interaction menu never shows a raw selector
+— this is what makes `toggle`'s `aria-pressed` read as Active.
+
+```ts
+expect(segmentInteraction("data-[state=checked]")).toBe("active");
+expect(segmentInteraction("aria-pressed")).toBe("active");
+expect(segmentInteraction("data-disabled")).toBe("disabled");
+expect(menuWords(component)).toEqual(["default","hover","focus","active","disabled"]);
+```
+
+*Catches:* a raw state selector leaking into the Interaction menu, or an engaged state not folding to Active/disabled.
+
 ---
 
 ## UI tests (Playwright, per component)
@@ -231,7 +273,7 @@ expect(clickingLabel()).toToggle(control);          // label + control are one u
 | Check | Kind | When |
 | --- | --- | --- |
 | GATE | gate | every commit (`bun run check`) |
-| FEW · ONE · BASE · CLS · STRUCT | unit (Vitest) | `bun run check`, per component |
+| FEW · ONE · BASE · CLS · STRUCT · DEF · PORT · FOLD | unit (Vitest) | `bun run check`, per component |
 | COV · LOOK · STYLE · PICK · STATE · LIVE · SLOT · SHOW · WIDE · SYNC · AFFORD | ui (Playwright) | per component |
 
 The UI checks that force editor behavior — STATE (force-state), SHOW (force-open), SLOT (per-part),
